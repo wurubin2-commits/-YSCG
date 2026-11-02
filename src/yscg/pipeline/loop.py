@@ -9,7 +9,15 @@ import numpy as np
 
 from ..config import SystemConfig
 from ..drift import Attributor, DriftMonitor
-from ..guardrails import BudgetExceeded, BudgetManager, validate_strategy_patch
+from ..guardrails import (
+    AdmissionGate,
+    AdmissionResult,
+    BudgetExceeded,
+    BudgetManager,
+    Gate,
+    RollbackGuard,
+    validate_strategy_patch,
+)
 from ..models import ModelRegistry, create_model
 from ..strategy import ACTION_CODE, Action, RulePolicy
 
@@ -40,6 +48,12 @@ class SelfEvolutionLoop:
         attributor: Attributor,
         monitor: DriftMonitor,
         log_fn=None,
+        admission_gate: AdmissionGate | None = None,
+        rollback_guard: RollbackGuard | None = None,
+        validator_probe=None,
+        memory=None,
+        heldout=None,
+        control_mode: bool = False,
     ):
         self.cfg = cfg
         self.stream = stream
@@ -50,6 +64,13 @@ class SelfEvolutionLoop:
         self.attributor = attributor
         self.monitor = monitor
         self._log = log_fn or (lambda step, data: None)
+        # 准入机制相关（可选，None 时回退到旧版增益逻辑，保持向后兼容）
+        self.admission_gate = admission_gate
+        self.rollback_guard = rollback_guard
+        self.validator_probe = validator_probe
+        self.memory = memory
+        self.heldout = heldout
+        self.control_mode = control_mode  # 对照组：消耗相同算力但不自我修改
 
         self.champion = None
         self.champion_window_acc: float | None = None
@@ -65,6 +86,7 @@ class SelfEvolutionLoop:
         self._cooldown = 0
         self._init_X = self._init_y = None
         self._val_X = self._val_y = None
+        self._admission_stats: dict[str, int] = {"pass": 0, "fail": 0, "validator_fail": 0, "rollback_fail": 0}
 
     # ---------------- 主流程 ----------------
     def run(self) -> dict:
@@ -100,7 +122,7 @@ class SelfEvolutionLoop:
                 self._decisions[decision.value] += 1
                 if decision in (Action.LIGHT_ADAPT, Action.FULL_RETRAIN):
                     try:
-                        self._handle_drift(step, X, probs, decision)
+                        self._handle_drift(step, X, probs, decision, report.severity)
                     except BudgetExceeded:
                         self._log(step, {"system/budget_exceeded": 1})
                     self.monitor.rebase()
@@ -130,6 +152,9 @@ class SelfEvolutionLoop:
         self.cost_minutes += COST_INIT
         version_id = self.registry.register(model, {"val_acc": self.val_acc}, "init")
         self.registry.promote(version_id)
+        # 初始化锚点 floor = 初始冠军分数，使「防退化」从基线起即生效
+        if self.admission_gate is not None and not self.admission_gate.anchor.is_empty():
+            self.admission_gate.anchor.ratchet(self.admission_gate.anchor.score(model))
 
     def _consult_advisor(self, report) -> dict:
         if self.advisor is None:
@@ -153,7 +178,7 @@ class SelfEvolutionLoop:
             self._patches_applied += 1
         return patch
 
-    def _handle_drift(self, step: int, X: np.ndarray, probs: np.ndarray, action: Action):
+    def _handle_drift(self, step: int, X: np.ndarray, probs: np.ndarray, action: Action, scenario: str = "none"):
         s = self.cfg.strategy
         # 成本意识：轻度漂移只花一半配额，把预算留给后续可能更严重的漂移
         scale = 1 if action == Action.FULL_RETRAIN else 0.5
@@ -196,18 +221,19 @@ class SelfEvolutionLoop:
         self.cost_minutes += COST_LIGHT if action == Action.LIGHT_ADAPT else COST_FULL
         self.cost_minutes += trial_cost * COST_HPO_TRIAL
 
-        self.registry.register(challenger, {"val_acc": val_acc_ch, "window_acc": win_acc_ch}, tag)
+        # 4.5) 更新保护性记忆：把本轮新标注且验证正确的样本纳入（记忆检查的数据源）
+        self._update_memory(scenario, step, exclude_idx)
 
-        # 5) 上线或回滚：轻量适配要求验证集不显著回退；严重漂移（全量重训）放宽为
-        #    "验证集不崩坏"（绝对下限），否则标签漂移期挑战者永远无法上线、冠军无法适应
-        if action == Action.LIGHT_ADAPT:
-            val_ok = val_acc_ch >= self.val_acc - s.promote_max_val_drop
-        else:
-            val_ok = val_acc_ch >= max(
-                self.val_acc - s.promote_relaxed_val_drop,
-                self.baseline_acc - s.promote_full_abs_drop,
-            )
-        promoted = win_acc_ch >= win_acc_champ + s.promote_min_gain and val_ok
+        # 5) 准入决策（多层门：增益/锚点/记忆 + 验证器自检 + 回滚护栏）
+        admission, promoted = self._admit(
+            challenger, tag, action, pool_X, pool_y,
+            val_acc_ch, win_acc_ch, win_acc_champ, step,
+        )
+        self.registry.register(
+            challenger, {"val_acc": val_acc_ch, "window_acc": win_acc_ch},
+            tag, admission=("pass" if admission.admitted else "fail"),
+        )
+
         if promoted:
             version_id = self.registry.history()[-1]["id"]
             self.registry.promote(version_id)
@@ -215,6 +241,9 @@ class SelfEvolutionLoop:
             self.val_acc = val_acc_ch
             self.champion_window_acc = win_acc_ch
             self.budget.promotions += 1
+            # 锚点棘轮抬升（准入后才允许，保证锚点分数持续增长）
+            if self.admission_gate is not None and not self.admission_gate.anchor.is_empty():
+                self.admission_gate.anchor.ratchet(self.admission_gate.anchor.score(challenger))
         else:
             self.budget.rollbacks += 1
 
@@ -224,7 +253,86 @@ class SelfEvolutionLoop:
             "experiment/champion_window_acc": win_acc_champ,
             "experiment/eval_pool_size": len(pool_y) if pool_y is not None else 0,
             "experiment/promoted": 1 if promoted else 0,
+            **admission.to_log(),
         })
+
+    def _admit(self, challenger, tag, action, pool_X, pool_y,
+               val_acc_ch, win_acc_ch, win_acc_champ, step):
+        """多层准入决策：增益/锚点/记忆 + 验证器自检 + 回滚护栏。返回 (result, promoted)。"""
+        s = self.cfg.strategy
+
+        # 验证器自检：失效则拒绝本轮所有候选，不假装决策机制仍有效
+        validator_healthy = True
+        if self.validator_probe is not None and self.admission_gate is not None:
+            validator_healthy = self.validator_probe.healthy(self.admission_gate, self.champion)
+            if not validator_healthy:
+                self._admission_stats["validator_fail"] += 1
+                self._log(step, {"validator/healthy": 0})
+        else:
+            self._log(step, {"validator/healthy": 1})
+
+        if self.admission_gate is not None:
+            admission = self.admission_gate.evaluate(
+                challenger, self.champion, (pool_X, pool_y),
+                validator_healthy=validator_healthy, round_key=step,
+            )
+        else:
+            # 向后兼容：旧版增益 + 验证回退逻辑（无准入门时）
+            if not validator_healthy:
+                admission = AdmissionResult(False, Gate.VALIDATOR, reason="验证器自检失败")
+            else:
+                gain = win_acc_ch - win_acc_champ
+                if action == Action.LIGHT_ADAPT:
+                    val_ok = val_acc_ch >= self.val_acc - s.promote_max_val_drop
+                else:
+                    val_ok = val_acc_ch >= max(
+                        self.val_acc - s.promote_relaxed_val_drop,
+                        self.baseline_acc - s.promote_full_abs_drop,
+                    )
+                admitted = gain >= s.promote_min_gain and val_ok
+                admission = AdmissionResult(
+                    admitted, Gate.PASS if admitted else Gate.GAIN, gain=gain,
+                    reason="旧版增益逻辑" if admitted else "增益不足或验证回退",
+                )
+
+        # 回滚护栏：只有旧版本完整保留且回滚路径经过验证才允许上线
+        rollback_ok = True
+        if admission.admitted and self.rollback_guard is not None:
+            rc = self.rollback_guard.preflight(self.champion)
+            if not rc.ok:
+                rollback_ok = False
+                admission = AdmissionResult(
+                    False, Gate.ROLLBACK, gain=admission.gain,
+                    anchor_score=admission.anchor_score,
+                    regression_count=admission.regression_count, reason=rc.reason,
+                )
+                self._admission_stats["rollback_fail"] += 1
+
+        if admission.admitted:
+            self._admission_stats["pass"] += 1
+        else:
+            self._admission_stats["fail"] += 1
+
+        # 对照组：消耗相同算力但不自我修改（永不 promote）
+        promoted = admission.admitted and rollback_ok and not self.control_mode
+        return admission, promoted
+
+    def _update_memory(self, scenario: str, step: int, start_idx: int) -> None:
+        """把本轮新标注且验证正确的样本写入保护性记忆。"""
+        if self.memory is None or start_idx >= len(self._ann_X):
+            return
+        Xs = np.concatenate(self._ann_X[start_idx:], axis=0)
+        ys = np.concatenate(self._ann_y[start_idx:], axis=0)
+        probs = self.champion.predict_proba(Xs)
+        rec = self.registry.champion_record()
+        version = rec["id"] if rec else "init"
+        self.memory.maybe_add(Xs, ys, probs, scenario, step, version)
+
+    def _heldout_acc(self) -> float:
+        """冻结留出集上的最终评判指标（迭代过程不可访问）。"""
+        if self.heldout is None or self.champion is None:
+            return -1.0
+        return float(self.heldout.evaluate(self.champion))
 
     def _eval_pool(self):
         if not self._eval_windows:
@@ -369,17 +477,21 @@ class SelfEvolutionLoop:
         truth = self.stream.truth()
         if truth is not None and self.champion is not None:
             stream_acc = _accuracy(truth, self.champion.predict_proba(self.stream.current_batch()))
+        admission_stats = {f"summary/admission_{k}": v for k, v in self._admission_stats.items()}
         return {
             "summary/baseline_val_acc": self.baseline_acc,
             "summary/final_val_acc": self.val_acc,
             "summary/final_window_acc": self.champion_window_acc if self.champion_window_acc is not None else -1,
             "summary/stream_acc_final": stream_acc if stream_acc is not None else -1,
+            "summary/heldout_acc": self._heldout_acc(),
             "summary/gain_over_baseline": (stream_acc - (self.baseline_acc or 0))
             if stream_acc is not None else -1,
             "summary/cost_minutes": self.cost_minutes,
             "summary/efficiency": self._efficiency(),
+            "summary/qualified_versions": len(self.registry.qualified_versions()),
             **self.budget.snapshot(),
             **decisions,
+            **admission_stats,
         }
 
     def _efficiency(self) -> float:
