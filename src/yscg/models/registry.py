@@ -17,7 +17,7 @@ class ModelRegistry:
         if self.state_path.exists():
             self._state = json.loads(self.state_path.read_text(encoding="utf-8"))
 
-    def register(self, model, metrics: dict, tag: str) -> str:
+    def register(self, model, metrics: dict, tag: str, admission: str | None = None) -> str:
         version_id = f"v{len(self._state['history']) + 1}"
         filename = f"{version_id}-{tag}{self.ext}"
         model.save(str(self.models_dir / filename))
@@ -26,6 +26,7 @@ class ModelRegistry:
             "tag": tag,
             "file": filename,
             "metrics": metrics,
+            "admission": admission,
             "created_at": datetime.now().isoformat(timespec="seconds"),
         }
         self._state["history"].append(record)
@@ -53,6 +54,17 @@ class ModelRegistry:
         if rec is None:
             return None
         return create_model(self.model_type).load(str(self.models_dir / rec["file"]))
+
+    def champion_file(self) -> Path | None:
+        """冠军模型的持久化文件路径（回滚护栏用它校验完整保留）。"""
+        rec = self.champion_record()
+        if rec is None:
+            return None
+        return self.models_dir / rec["file"]
+
+    def qualified_versions(self) -> list:
+        """获得准入资格（admitted）的版本，即「被保留的准入版本」。"""
+        return [r for r in self._state["history"] if r.get("admission") == "pass"]
 
     def history(self) -> list:
         return list(self._state["history"])
