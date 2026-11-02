@@ -179,3 +179,26 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# ---- ML / 赛题项目 ----
+# SwanLab 实验记录（本地日志，云端为准）
+swanlog/
+# 模型产物与注册表状态（仅仓库根目录；不误伤 src/yscg/models 源码包）
+artifacts/
+checkpoints/
+/models/
+*.h5
+*.keras
+*.lgb
+*.pt
+*.pth
+*.onnx
+# 数据集（官方数据包另行放置，不入库）
+/data/
+/datasets/
+*.csv
+*.parquet
+*.npz
+# 评测镜像构建缓存
+.dockerignore.tmp
+docker/build/
