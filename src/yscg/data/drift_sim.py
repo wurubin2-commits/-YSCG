@@ -34,6 +34,7 @@ class TabularDriftSimulator(DataStream):
         batch_size: int = 100,
         init_samples: int = 3000,
         val_samples: int = 1000,
+        heldout_samples: int = 500,
         annotation_budget: int = 300,
         seed: int = 42,
         scenario: str = "transient",
@@ -47,7 +48,7 @@ class TabularDriftSimulator(DataStream):
         rng = np.random.default_rng(seed)
         pool_size = n_batches * batch_size
         X, y = make_classification(
-            n_samples=pool_size + init_samples + val_samples,
+            n_samples=pool_size + init_samples + val_samples + heldout_samples,
             n_features=n_features,
             n_informative=n_informative,
             n_redundant=0,
@@ -59,8 +60,11 @@ class TabularDriftSimulator(DataStream):
         self._pool_y = y[:pool_size]
         self._init = X[pool_size : pool_size + init_samples].astype(np.float32)
         self._init_y = y[pool_size : pool_size + init_samples]
-        self._val = X[pool_size + init_samples :].astype(np.float32)
-        self._val_y = y[pool_size + init_samples :]
+        self._val = X[pool_size + init_samples : pool_size + init_samples + val_samples].astype(np.float32)
+        self._val_y = y[pool_size + init_samples : pool_size + init_samples + val_samples]
+        # 冻结留出集：迭代过程不可访问，仅最终评判
+        self._held = X[pool_size + init_samples + val_samples :].astype(np.float32)
+        self._held_y = y[pool_size + init_samples + val_samples :]
 
         self._std = self._pool.std(axis=0)
         self._flip_threshold = float(
@@ -95,6 +99,10 @@ class TabularDriftSimulator(DataStream):
 
     def get_val_data(self):
         return self._val, self._val_y
+
+    def get_heldout_data(self):
+        """冻结留出集（最终评判标准）：迭代过程不可访问。"""
+        return self._held, self._held_y
 
     def current_batch(self) -> np.ndarray:
         return self._current_X
