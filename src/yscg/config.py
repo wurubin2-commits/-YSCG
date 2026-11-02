@@ -26,6 +26,14 @@ class StrategyConfig:
     retrain_annotate: int = 100      # 每次重训新增的训练标注配额
     eval_window_pool: int = 3        # 窗口准确率在最近 K 个评估窗口上池化（降方差、防过拟合）
     rebase_after_event: bool = True  # 漂移事件后重设参考窗口
+    # ---- 锚点检查（Anchor Gate）----
+    anchor_eps: float = 0.02         # 锚点单维退化容差（吸收随机噪声，拦截真实退化）
+    # ---- 记忆检查（Memory Gate）----
+    memory_capacity: int = 1000      # 保护性记忆容量上限
+    memory_min_conf: float = 0.8     # 入内存的最低验证置信度
+    memory_min_quota: int = 10       # 分层回归采样每层最小配额（保证覆盖）
+    reg_sample_size: int = 300       # 回归样本集大小
+    reg_tolerance_frac: float = 0.05 # 回归计数容差（占回归样本集比例）
 
 
 @dataclass
