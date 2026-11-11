@@ -38,7 +38,8 @@ python experiments/run_simulation.py --static
 python experiments/run_simulation.py --budget 600 --mode local
 ```
 
-实验记录写入 `swanlog/`（本地模式）；接入 SwanLab 云端账号后自动同步。
+SwanLab 云端项目（**唯一记录地址**）：**https://swanlab.cn/@07240115/ZYYQ**。
+`--mode online` 上传云端（正式记录），`--mode local` 仅本地调试（不联网）。
 
 ```bash
 pytest   # 冒烟测试
