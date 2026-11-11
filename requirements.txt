@@ -1,14 +1,17 @@
-# 核心依赖（与本地实测环境锁定版本一致，Python 3.13 / Windows）
+# 核心依赖（CPU-only：评测环境 4核8G、无 GPU、断外网、镜像 ≤2GB）
 numpy==2.4.4
 pandas==2.3.3
 scipy==1.17.1
 scikit-learn==1.8.0
-tensorflow==2.21.0
-keras==3.14.0
 lightgbm==4.6.0
 swanlab==0.10.3
 bayesian-optimization==3.2.1
 PyYAML==6.0.3
 joblib==1.5.3
+requests==2.32.5
 # 开发/测试
 pytest==9.1.1
+
+# 可选：深度学习路线（无 GPU / 镜像体积受限时不要安装）
+# tensorflow==2.21.0
+# keras==3.14.0
