@@ -52,9 +52,9 @@ def test_memory_capacity_and_correctness_filter():
 def test_memory_rejects_wrong_predictions():
     X, y = _data(n=60)
     mem = ProtectiveMemory(capacity=100, min_conf=0.0)
-    # 构造全错的预测（多数类预测反类）
+    # 构造全错的预测（每行把 1-y 置 1.0，使 argmax 恒为 1-y）
     probs = np.zeros((len(X), 2))
-    probs[:, 1 - y] = 1.0
+    probs[np.arange(len(X)), 1 - y] = 1.0
     mem.maybe_add(X, y, probs, scenario="normal", batch=0, version="v1")
     assert len(mem) == 0  # 全部预测错误，不入内存
 
