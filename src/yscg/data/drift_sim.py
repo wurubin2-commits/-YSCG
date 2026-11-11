@@ -12,7 +12,6 @@ scenario="persistent"：漂移持续到流结束（无恢复段），考验系�
 from dataclasses import dataclass, field
 
 import numpy as np
-from sklearn.datasets import make_classification
 
 from .stream import DataStream
 
@@ -47,6 +46,7 @@ class TabularDriftSimulator(DataStream):
 
         rng = np.random.default_rng(seed)
         pool_size = n_batches * batch_size
+        from sklearn.datasets import make_classification  # 惰性导入：无 sklearn 也可 import 数据层
         X, y = make_classification(
             n_samples=pool_size + init_samples + val_samples + heldout_samples,
             n_features=n_features,
