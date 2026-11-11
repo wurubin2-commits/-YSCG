@@ -37,9 +37,11 @@ class AdmissionResult:
     reason: str = ""
 
     def to_log(self) -> dict:
+        # SwanLab 只接受数值指标：把 gate 名编码为整数（参照 ACTION_CODE 做法）
+        code = {"pass": 0, "gain": 1, "anchor": 2, "memory": 3, "validator": 4, "rollback": 5}
         return {
             "admission/admitted": 1 if self.admitted else 0,
-            "admission/gate": self.gate.value,
+            "admission/gate": code.get(self.gate.value, -1),
             "admission/gain": self.gain,
             "admission/anchor_score": self.anchor_score,
             "admission/regression_count": self.regression_count,
