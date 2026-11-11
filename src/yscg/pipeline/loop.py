@@ -96,14 +96,20 @@ class SelfEvolutionLoop:
 
         warmup = self.cfg.strategy.window_size
         for step in range(warmup):
-            X = self.stream.next_batch()
+            try:
+                X = self.stream.next_batch()
+            except StopIteration:
+                break
             probs = self.champion.predict_proba(X)
             self.monitor.observe(X, probs)
             self._log(step, self._step_log(step, None, Action.NOOP, probs))
         self.monitor.rebase()
 
         for step in range(warmup, self.cfg.n_batches):
-            X = self.stream.next_batch()
+            try:
+                X = self.stream.next_batch()
+            except StopIteration:
+                break
             probs = self.champion.predict_proba(X)
             report = self.monitor.check(X, probs)
             self.monitor.observe(X, probs)
@@ -182,7 +188,7 @@ class SelfEvolutionLoop:
         s = self.cfg.strategy
         # 成本意识：轻度漂移只花一半配额，把预算留给后续可能更严重的漂移
         scale = 1 if action == Action.FULL_RETRAIN else 0.5
-        used_before = self.budget.annotations_used
+        n_before = len(self._ann_X)  # 按实际入库量判断是否有新标签（兼容免费标签）
 
         # 1) 评估窗口：随机采样标注（无偏）；窗口准确率在最近 K 个窗口上池化，
         #    避免单窗口样本的方差/运气让健康门永久误判（历史教训：卡在 1.0）
@@ -197,7 +203,7 @@ class SelfEvolutionLoop:
 
         # 2) 不确定性采样补充训练标注（与评估窗口不相交，防训练/评估重叠泄漏）
         self._annotate_uncertain(X, probs, int(s.retrain_annotate * scale), exclude=win_idx)
-        if self.budget.annotations_used == used_before:
+        if len(self._ann_X) == n_before:
             # 无新增标注 → 重训学不到新东西，跳过以节省重训/HPO 预算（防空转迭代）
             self._log(step, {"experiment/skipped_no_new_labels": 1})
             return
@@ -366,12 +372,10 @@ class SelfEvolutionLoop:
             model.fit(X, y, epochs=epochs)
 
     def _hpo(self, X_tr, y_tr, pool_X, pool_y, trials: int):
-        """贝叶斯优化：目标为 (验证集 acc + 池化评估窗口 acc) / 2，兼顾新旧分布。
+        """超参优化：优先贝叶斯优化；bayes_opt 不可用时随机搜索兜底。
 
-        窗口为最近 K 次事件池化样本（远大于单窗口），避免对小窗口过拟合选参。
+        目标为 (验证集 acc + 池化评估窗口 acc) / 2，兼顾新旧分布。
         """
-        from bayes_opt import BayesianOptimization
-
         def score(model) -> float:
             va = _accuracy(self._val_y, model.predict_proba(self._val_X))
             wa = (
@@ -396,11 +400,29 @@ class SelfEvolutionLoop:
 
             pbounds = {"lr": (1e-3, 2e-2)}
 
-        optimizer = BayesianOptimization(
-            f=objective, pbounds=pbounds, random_state=self.cfg.seed, verbose=0,
-        )
-        optimizer.maximize(init_points=min(3, trials), n_iter=max(0, trials - 3))
-        best = optimizer.max["params"]
+        def _call_objective(cand: dict) -> float:
+            if self.cfg.model_type == "lgbm":
+                return objective(int(cand["n_estimators"]), float(cand["learning_rate"]))
+            return objective(float(cand["lr"]))
+
+        try:
+            from bayes_opt import BayesianOptimization
+
+            optimizer = BayesianOptimization(
+                f=objective, pbounds=pbounds, random_state=self.cfg.seed, verbose=0,
+            )
+            optimizer.maximize(init_points=min(3, trials), n_iter=max(0, trials - 3))
+            best = {k: float(v) for k, v in optimizer.max["params"].items()}
+        except Exception:  # noqa: BLE001 - 无 bayes_opt 或小数据时随机搜索保底
+            rng = np.random.default_rng(self.cfg.seed)
+            best, best_score = None, -np.inf
+            for _ in range(max(1, trials)):
+                cand = {k: float(rng.uniform(lo, hi)) for k, (lo, hi) in pbounds.items()}
+                s = _call_objective(cand)
+                if s > best_score:
+                    best_score, best = s, cand
+            if best is None:
+                best = {k: float((lo + hi) / 2.0) for k, (lo, hi) in pbounds.items()}
 
         model = create_model(self.cfg.model_type, seed=self.cfg.seed)
         if self.cfg.model_type == "lgbm":
@@ -433,7 +455,22 @@ class SelfEvolutionLoop:
         self._pay_and_store(X, idx)
 
     def _pay_and_store(self, X: np.ndarray, idx: np.ndarray):
-        """标注并入库；配额不足时按剩余量部分标注，彻底耗尽则返回 (None, None, None)。"""
+        """标注并入库。
+
+        对齐赛题 B 包规则：评测流标签总可得（use_free_labels=True），直接读 truth，
+        不消耗任何配额；否则回退到旧的「标注配额」路径（本地仿真/兼容模式）。
+        """
+        idx = np.asarray(idx, dtype=int)
+        truth = self.stream.truth()
+        if self.cfg.use_free_labels and truth is not None:
+            idx = idx[: len(truth)]
+            if len(idx) == 0:
+                return None, None, None
+            y = truth[idx]
+            self._ann_X.append(X[idx])
+            self._ann_y.append(y)
+            return X[idx], y, idx
+
         remaining = self.budget.annotation_budget - self.budget.annotations_used
         idx = idx[:remaining]
         if len(idx) == 0:
