@@ -124,7 +124,8 @@ def run_one(cfg: SystemConfig, args, arm: str, seed: int, control_mode: bool = F
     comp = build_components(cfg, args, artifacts)
 
     run = swanlab.init(
-        project=args.project,
+        project=args.project,          # ZYYQ
+        workspace=args.workspace,      # 07240115
         experiment_name=f"sim-{arm}{suffix}-s{seed}",
         description=(
             "对照组：消耗相同训练算力/评估调用但不自我修改"
@@ -180,7 +181,8 @@ def main():
     parser.add_argument("--repeats", type=int, default=1, help="重复运行次数（报告方差与置信区间）")
     parser.add_argument("--control", action="store_true",
                         help="对照组：消耗相同训练算力/评估调用但不自我修改")
-    parser.add_argument("--project", default="yscg")
+    parser.add_argument("--project", default="ZYYQ")            # 唯一记录的 SwanLab 项目
+    parser.add_argument("--workspace", default="07240115")      # SwanLab 用户/组命名空间
     args = parser.parse_args()
 
     arm = f"{args.model}{'-static' if args.static else ''}{'-persist' if args.scenario == 'persistent' else ''}"
