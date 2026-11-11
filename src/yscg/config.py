@@ -44,7 +44,10 @@ class SystemConfig:
     seed: int = 42
     annotation_budget: int = 300
     max_retrains: int = 5
-    project: str = "yscg"
+    project: str = "ZYYQ"            # SwanLab 项目（唯一记录地址）
+    workspace: str = "07240115"      # SwanLab 用户/组命名空间
+    # 对齐赛题 B 包规则：评测流标签总可得，无需消耗标注配额（改为 CPU/迭代成本）
+    use_free_labels: bool = True
     strategy: StrategyConfig = field(default_factory=StrategyConfig)
 
     def flat(self) -> dict:
