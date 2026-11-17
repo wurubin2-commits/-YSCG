@@ -1,0 +1,34 @@
+{
+  "baselines": [
+    {
+      "profile": "A",
+      "task": "classification",
+      "metrics": {
+        "accuracy": 0.8786173633440515,
+        "macro_f1": 0.7140297220788709,
+        "n": 1244,
+        "errors": 0
+      }
+    },
+    {
+      "profile": "B",
+      "task": "regression",
+      "metrics": {
+        "rmse": 681.1598326043113,
+        "mae": 563.1058414514887,
+        "n": 1679,
+        "errors": 0
+      }
+    },
+    {
+      "profile": "C",
+      "task": "regression",
+      "metrics": {
+        "rmse": 52.86857256611151,
+        "mae": 38.89982982666355,
+        "n": 23049,
+        "errors": 0
+      }
+    }
+  ]
+}

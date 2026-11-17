@@ -1,0 +1,491 @@
+{
+  "experiments": [
+    {
+      "profile": "A",
+      "task": "classification",
+      "baseline_id": "cpu-a-guide-20261110-v1",
+      "champion_start": 0.726366315676049,
+      "best": 0.7268899315360345,
+      "retrain_rounds": 9,
+      "accepted_rounds": 1,
+      "drift_rounds": 9,
+      "state": {
+        "tried_config_hashes": [],
+        "rejected_config_hashes": [
+          "sha256:777729ad349d23838a7d861f7a1dd2a8b31336518d715e1ae4b93d320f856423",
+          "sha256:2f475df217127231da13690f15fa3ef06816b36dfafcc217758e653d5f8e28ce",
+          "sha256:f8a50e738a8dd306e56b5461189b883ffe0c7fa93169fd7947c150c20c3959b1",
+          "sha256:4f93ff66846d5743b53998d54d513afb065ad7753ca9ec7c7f5d66a96fea00f2",
+          "sha256:33fb02c1e155927c7a103bae6e560df0d1eca10a33a3c857cdcbaead09b5cb29",
+          "sha256:90f99590f9fb990713b7902ee44edec5b7f882d1f826850e71d67b16ec4f67a6",
+          "sha256:2e7440bfbe455cdee380d69baf98d065c4ca25d4330b42201b964868d36ab298",
+          "sha256:19ef32181e2ff59e97cfc0d055d3d586684849508a2c2fcb60e630949575c23d"
+        ],
+        "candidate_hashes": [
+          "sha256:777729ad349d23838a7d861f7a1dd2a8b31336518d715e1ae4b93d320f856423",
+          "sha256:2f475df217127231da13690f15fa3ef06816b36dfafcc217758e653d5f8e28ce",
+          "sha256:9da0c2f81dde01ac3ff9f5a3e4f28527fefd6716182746fef77627329a9ff729",
+          "sha256:f8a50e738a8dd306e56b5461189b883ffe0c7fa93169fd7947c150c20c3959b1",
+          "sha256:4f93ff66846d5743b53998d54d513afb065ad7753ca9ec7c7f5d66a96fea00f2",
+          "sha256:33fb02c1e155927c7a103bae6e560df0d1eca10a33a3c857cdcbaead09b5cb29",
+          "sha256:90f99590f9fb990713b7902ee44edec5b7f882d1f826850e71d67b16ec4f67a6",
+          "sha256:2e7440bfbe455cdee380d69baf98d065c4ca25d4330b42201b964868d36ab298",
+          "sha256:19ef32181e2ff59e97cfc0d055d3d586684849508a2c2fcb60e630949575c23d"
+        ],
+        "anchor_floor": {
+          "primary": 0.7268899315360345
+        },
+        "protective_memory": [],
+        "policy_params": {},
+        "last_reject_reason": "漂移 6.534>0.15，重训未改善（0.7252 vs 0.7269），回滚保留父模型",
+        "drift_score": 6.534164186665214
+      },
+      "rounds": [
+        {
+          "round": 1,
+          "drift_score": 0.0,
+          "triggered": false,
+          "action": "conservative",
+          "llm_call_id": "local-advisor-drift-A-01",
+          "primary_before": 0.726366315676049,
+          "primary_after": 0.726366315676049,
+          "accepted": false,
+          "best": 0.726366315676049,
+          "reason": "无显著漂移，保留父模型（省成本）"
+        },
+        {
+          "round": 2,
+          "drift_score": 0.6528361158004743,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-A-02",
+          "primary_before": 0.726366315676049,
+          "primary_after": 0.726366315676049,
+          "accepted": false,
+          "best": 0.726366315676049,
+          "reason": "漂移 0.653>0.15，重训未改善（0.7264 vs 0.7264），回滚保留父模型"
+        },
+        {
+          "round": 3,
+          "drift_score": 6.668473665379127,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-A-03",
+          "primary_before": 0.726366315676049,
+          "primary_after": 0.7258429888617122,
+          "accepted": false,
+          "best": 0.726366315676049,
+          "reason": "漂移 6.668>0.15，重训未改善（0.7258 vs 0.7264），回滚保留父模型"
+        },
+        {
+          "round": 4,
+          "drift_score": 5.833944966746806,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-A-04",
+          "primary_before": 0.726366315676049,
+          "primary_after": 0.7268899315360345,
+          "accepted": true,
+          "best": 0.7268899315360345,
+          "reason": "漂移 5.834>0.15，重训改善 +0.0005，接受"
+        },
+        {
+          "round": 5,
+          "drift_score": 5.813156549938556,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-A-05",
+          "primary_before": 0.7268899315360345,
+          "primary_after": 0.723566801722049,
+          "accepted": false,
+          "best": 0.7268899315360345,
+          "reason": "漂移 5.813>0.15，重训未改善（0.7236 vs 0.7269），回滚保留父模型"
+        },
+        {
+          "round": 6,
+          "drift_score": 4.496569011399016,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-A-06",
+          "primary_before": 0.7268899315360345,
+          "primary_after": 0.7252362363932718,
+          "accepted": false,
+          "best": 0.7268899315360345,
+          "reason": "漂移 4.497>0.15，重训未改善（0.7252 vs 0.7269），回滚保留父模型"
+        },
+        {
+          "round": 7,
+          "drift_score": 2.707054350876965,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-A-07",
+          "primary_before": 0.7268899315360345,
+          "primary_after": 0.7252362363932718,
+          "accepted": false,
+          "best": 0.7268899315360345,
+          "reason": "漂移 2.707>0.15，重训未改善（0.7252 vs 0.7269），回滚保留父模型"
+        },
+        {
+          "round": 8,
+          "drift_score": 4.349426338022112,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-A-08",
+          "primary_before": 0.7268899315360345,
+          "primary_after": 0.7252362363932718,
+          "accepted": false,
+          "best": 0.7268899315360345,
+          "reason": "漂移 4.349>0.15，重训未改善（0.7252 vs 0.7269），回滚保留父模型"
+        },
+        {
+          "round": 9,
+          "drift_score": 3.563202828170155,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-A-09",
+          "primary_before": 0.7268899315360345,
+          "primary_after": 0.724649792829588,
+          "accepted": false,
+          "best": 0.7268899315360345,
+          "reason": "漂移 3.563>0.15，重训未改善（0.7246 vs 0.7269），回滚保留父模型"
+        },
+        {
+          "round": 10,
+          "drift_score": 6.534164186665214,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-A-10",
+          "primary_before": 0.7268899315360345,
+          "primary_after": 0.7252362363932718,
+          "accepted": false,
+          "best": 0.7268899315360345,
+          "reason": "漂移 6.534>0.15，重训未改善（0.7252 vs 0.7269），回滚保留父模型"
+        }
+      ]
+    },
+    {
+      "profile": "B",
+      "task": "regression",
+      "baseline_id": "cpu-b-rul-20261110-v1",
+      "champion_start": 647.2394898137788,
+      "best": 627.9495648922535,
+      "retrain_rounds": 9,
+      "accepted_rounds": 1,
+      "drift_rounds": 9,
+      "state": {
+        "tried_config_hashes": [],
+        "rejected_config_hashes": [
+          "sha256:ec7d2b2ac72a4a858ca9b3f7abf8ee0f3ed0c2b9ef66346738fb87547ec059d6",
+          "sha256:b71cb678ddc5e967dd41e7b6188f357cae3e317ef4201c7f5228a14d4e1bddbc",
+          "sha256:5498ee84d4288b871ec2ff82a644d81738885e462952bb2827548c0bc565d197",
+          "sha256:de1e9f82ae9b09660131123ce2af7dd2893c68c6e15543c0173ea71fea79584f",
+          "sha256:ca4ec647ed69903b836855ed8641fb114133a442ae33ad6c5ecd069a442131b6",
+          "sha256:3ccbfd9d6e02e35007b7249ddd7bf6e7d65d3913089873d6fa33ce19ad2feb2d",
+          "sha256:5b11d58d4ce5063fe3900a14a5224a1f8ea374d113438caf6fd344364d2e0cf7",
+          "sha256:8e09759ee7a86daa52d8a9904da889caef14f4349372be0970cf48e62036c3af"
+        ],
+        "candidate_hashes": [
+          "sha256:ec7d2b2ac72a4a858ca9b3f7abf8ee0f3ed0c2b9ef66346738fb87547ec059d6",
+          "sha256:b71cb678ddc5e967dd41e7b6188f357cae3e317ef4201c7f5228a14d4e1bddbc",
+          "sha256:5498ee84d4288b871ec2ff82a644d81738885e462952bb2827548c0bc565d197",
+          "sha256:97da4f51436f505cf010bda49ad4a8bdecf7925052aa5c928bc34eac7fb8884b",
+          "sha256:de1e9f82ae9b09660131123ce2af7dd2893c68c6e15543c0173ea71fea79584f",
+          "sha256:ca4ec647ed69903b836855ed8641fb114133a442ae33ad6c5ecd069a442131b6",
+          "sha256:3ccbfd9d6e02e35007b7249ddd7bf6e7d65d3913089873d6fa33ce19ad2feb2d",
+          "sha256:5b11d58d4ce5063fe3900a14a5224a1f8ea374d113438caf6fd344364d2e0cf7",
+          "sha256:8e09759ee7a86daa52d8a9904da889caef14f4349372be0970cf48e62036c3af"
+        ],
+        "anchor_floor": {
+          "primary": 627.9495648922535
+        },
+        "protective_memory": [],
+        "policy_params": {},
+        "last_reject_reason": "漂移 3.276>0.15，重训未改善（660.7349 vs 627.9496），回滚保留父模型",
+        "drift_score": 3.275732576077767
+      },
+      "rounds": [
+        {
+          "round": 1,
+          "drift_score": 0.0,
+          "triggered": false,
+          "action": "conservative",
+          "llm_call_id": "local-advisor-drift-B-01",
+          "primary_before": 647.2394898137788,
+          "primary_after": 647.2394898137788,
+          "accepted": false,
+          "best": 647.2394898137788,
+          "reason": "无显著漂移，保留父模型（省成本）"
+        },
+        {
+          "round": 2,
+          "drift_score": 1.0588896310185538,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-B-02",
+          "primary_before": 647.2394898137788,
+          "primary_after": 689.3242582384653,
+          "accepted": false,
+          "best": 647.2394898137788,
+          "reason": "漂移 1.059>0.15，重训未改善（689.3243 vs 647.2395），回滚保留父模型"
+        },
+        {
+          "round": 3,
+          "drift_score": 2.9392127583777525,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-B-03",
+          "primary_before": 647.2394898137788,
+          "primary_after": 661.4241129690937,
+          "accepted": false,
+          "best": 647.2394898137788,
+          "reason": "漂移 2.939>0.15，重训未改善（661.4241 vs 647.2395），回滚保留父模型"
+        },
+        {
+          "round": 4,
+          "drift_score": 7.140480430203874,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-B-04",
+          "primary_before": 647.2394898137788,
+          "primary_after": 656.1919966632967,
+          "accepted": false,
+          "best": 647.2394898137788,
+          "reason": "漂移 7.140>0.15，重训未改善（656.1920 vs 647.2395），回滚保留父模型"
+        },
+        {
+          "round": 5,
+          "drift_score": 7.103039318598114,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-B-05",
+          "primary_before": 647.2394898137788,
+          "primary_after": 627.9495648922535,
+          "accepted": true,
+          "best": 627.9495648922535,
+          "reason": "漂移 7.103>0.15，重训改善 -19.2899，接受"
+        },
+        {
+          "round": 6,
+          "drift_score": 2.543341610189029,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-B-06",
+          "primary_before": 627.9495648922535,
+          "primary_after": 639.4348805369511,
+          "accepted": false,
+          "best": 627.9495648922535,
+          "reason": "漂移 2.543>0.15，重训未改善（639.4349 vs 627.9496），回滚保留父模型"
+        },
+        {
+          "round": 7,
+          "drift_score": 8.575329638164684,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-B-07",
+          "primary_before": 627.9495648922535,
+          "primary_after": 642.3028360707852,
+          "accepted": false,
+          "best": 627.9495648922535,
+          "reason": "漂移 8.575>0.15，重训未改善（642.3028 vs 627.9496），回滚保留父模型"
+        },
+        {
+          "round": 8,
+          "drift_score": 7.534230828181766,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-B-08",
+          "primary_before": 627.9495648922535,
+          "primary_after": 635.4161748328175,
+          "accepted": false,
+          "best": 627.9495648922535,
+          "reason": "漂移 7.534>0.15，重训未改善（635.4162 vs 627.9496），回滚保留父模型"
+        },
+        {
+          "round": 9,
+          "drift_score": 7.258789403042391,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-B-09",
+          "primary_before": 627.9495648922535,
+          "primary_after": 633.8728918809234,
+          "accepted": false,
+          "best": 627.9495648922535,
+          "reason": "漂移 7.259>0.15，重训未改善（633.8729 vs 627.9496），回滚保留父模型"
+        },
+        {
+          "round": 10,
+          "drift_score": 3.275732576077767,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-B-10",
+          "primary_before": 627.9495648922535,
+          "primary_after": 660.7348747401729,
+          "accepted": false,
+          "best": 627.9495648922535,
+          "reason": "漂移 3.276>0.15，重训未改善（660.7349 vs 627.9496），回滚保留父模型"
+        }
+      ]
+    },
+    {
+      "profile": "C",
+      "task": "regression",
+      "baseline_id": "cpu-c-guide-20261110-v1",
+      "champion_start": 51.933885489408866,
+      "best": 51.684608389041266,
+      "retrain_rounds": 9,
+      "accepted_rounds": 3,
+      "drift_rounds": 9,
+      "state": {
+        "tried_config_hashes": [],
+        "rejected_config_hashes": [
+          "sha256:82ff4457117862faeac5951d596e4c9a04d6a4991aaf43d44e05290e7f22cc4c",
+          "sha256:cc24676bdab80679d82935dea1fcfcf1e4b0325db1ff5130e7a8ffd57db216d0",
+          "sha256:f4a80efa472bd9e6d5448194d02d4b4b9851dfbe45135ff43eba7669db6b7512",
+          "sha256:8b468b757f9a27b71605ed0c015954087e4367c522cd75b61aed1d4cbd404245",
+          "sha256:b5cf8d9ca1dc9962462de1cbf9f5a4d6b82c6e6e9f3296c767056f7f95753f82",
+          "sha256:4f5b3684671a20ac502eb76d4bf8f420b01ccdc65173bc0011a3307f68f3301f"
+        ],
+        "candidate_hashes": [
+          "sha256:82ff4457117862faeac5951d596e4c9a04d6a4991aaf43d44e05290e7f22cc4c",
+          "sha256:3023162d54cdafb950770dbcba055b0b05f376f08cc72c3fe2f3ea6d32525b25",
+          "sha256:cc24676bdab80679d82935dea1fcfcf1e4b0325db1ff5130e7a8ffd57db216d0",
+          "sha256:f4a80efa472bd9e6d5448194d02d4b4b9851dfbe45135ff43eba7669db6b7512",
+          "sha256:8b468b757f9a27b71605ed0c015954087e4367c522cd75b61aed1d4cbd404245",
+          "sha256:b5cf8d9ca1dc9962462de1cbf9f5a4d6b82c6e6e9f3296c767056f7f95753f82",
+          "sha256:98765b184f1afd0d1851b0f98f90858a9ce5279072793b234b0101d19117af4a",
+          "sha256:4f5b3684671a20ac502eb76d4bf8f420b01ccdc65173bc0011a3307f68f3301f",
+          "sha256:ba75be118ec836f50c57afe055d5233d3383b40d99e447b319c4b46d8dd4d9d8"
+        ],
+        "anchor_floor": {
+          "primary": 51.684608389041266
+        },
+        "protective_memory": [],
+        "policy_params": {},
+        "last_reject_reason": "",
+        "drift_score": 11.563615935690239
+      },
+      "rounds": [
+        {
+          "round": 1,
+          "drift_score": 0.0,
+          "triggered": false,
+          "action": "conservative",
+          "llm_call_id": "local-advisor-drift-C-01",
+          "primary_before": 51.933885489408866,
+          "primary_after": 51.933885489408866,
+          "accepted": false,
+          "best": 51.933885489408866,
+          "reason": "无显著漂移，保留父模型（省成本）"
+        },
+        {
+          "round": 2,
+          "drift_score": 7.6924086118784345,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-C-02",
+          "primary_before": 51.933885489408866,
+          "primary_after": 52.176673601466725,
+          "accepted": false,
+          "best": 51.933885489408866,
+          "reason": "漂移 7.692>0.15，重训未改善（52.1767 vs 51.9339），回滚保留父模型"
+        },
+        {
+          "round": 3,
+          "drift_score": 11.31166865784562,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-C-03",
+          "primary_before": 51.933885489408866,
+          "primary_after": 51.92146379662078,
+          "accepted": true,
+          "best": 51.92146379662078,
+          "reason": "漂移 11.312>0.15，重训改善 -0.0124，接受"
+        },
+        {
+          "round": 4,
+          "drift_score": 11.309278605029311,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-C-04",
+          "primary_before": 51.92146379662078,
+          "primary_after": 52.056133364125394,
+          "accepted": false,
+          "best": 51.92146379662078,
+          "reason": "漂移 11.309>0.15，重训未改善（52.0561 vs 51.9215），回滚保留父模型"
+        },
+        {
+          "round": 5,
+          "drift_score": 6.260006805153627,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-C-05",
+          "primary_before": 51.92146379662078,
+          "primary_after": 53.3174381794842,
+          "accepted": false,
+          "best": 51.92146379662078,
+          "reason": "漂移 6.260>0.15，重训未改善（53.3174 vs 51.9215），回滚保留父模型"
+        },
+        {
+          "round": 6,
+          "drift_score": 0.7428549010258116,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-C-06",
+          "primary_before": 51.92146379662078,
+          "primary_after": 52.24013620272722,
+          "accepted": false,
+          "best": 51.92146379662078,
+          "reason": "漂移 0.743>0.15，重训未改善（52.2401 vs 51.9215），回滚保留父模型"
+        },
+        {
+          "round": 7,
+          "drift_score": 8.856498887978487,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-C-07",
+          "primary_before": 51.92146379662078,
+          "primary_after": 51.92298874596573,
+          "accepted": false,
+          "best": 51.92146379662078,
+          "reason": "漂移 8.856>0.15，重训未改善（51.9230 vs 51.9215），回滚保留父模型"
+        },
+        {
+          "round": 8,
+          "drift_score": 11.502604034993226,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-C-08",
+          "primary_before": 51.92146379662078,
+          "primary_after": 51.747466345813145,
+          "accepted": true,
+          "best": 51.747466345813145,
+          "reason": "漂移 11.503>0.15，重训改善 -0.1740，接受"
+        },
+        {
+          "round": 9,
+          "drift_score": 11.472929377237762,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-C-09",
+          "primary_before": 51.747466345813145,
+          "primary_after": 51.769535729698774,
+          "accepted": false,
+          "best": 51.747466345813145,
+          "reason": "漂移 11.473>0.15，重训未改善（51.7695 vs 51.7475），回滚保留父模型"
+        },
+        {
+          "round": 10,
+          "drift_score": 11.563615935690239,
+          "triggered": true,
+          "action": "retrain",
+          "llm_call_id": "local-advisor-drift-C-10",
+          "primary_before": 51.747466345813145,
+          "primary_after": 51.684608389041266,
+          "accepted": true,
+          "best": 51.684608389041266,
+          "reason": "漂移 11.564>0.15，重训改善 -0.0629，接受"
+        }
+      ]
+    }
+  ]
+}

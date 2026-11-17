@@ -1,0 +1,70 @@
+{
+  "rounds": [
+    {
+      "profile": "A",
+      "task": "classification",
+      "baseline_id": "cpu-a-guide-20261110-v1",
+      "before": {
+        "accuracy": 0.8786173633440515,
+        "macro_f1": 0.7140297220788709
+      },
+      "after": {
+        "accuracy": 0.885048231511254,
+        "macro_f1": 0.7257820444850657
+      },
+      "gain": {
+        "accuracy": 0.006430868167202508,
+        "macro_f1": 0.011752322406194726
+      },
+      "train_rows": 445,
+      "validation_rows": 1244,
+      "parameter_count": 4326,
+      "training_seconds": 0.03200000000651926,
+      "checkpoint": "D:\\-YSCG\\artifacts\\harness-round\\A\\checkpoint.npz"
+    },
+    {
+      "profile": "B",
+      "task": "regression",
+      "baseline_id": "cpu-b-rul-20261110-v1",
+      "before": {
+        "mae": 563.1058414514887,
+        "rmse": 681.1598326043113
+      },
+      "after": {
+        "mae": 563.8643570514373,
+        "rmse": 666.8809504539922
+      },
+      "gain": {
+        "mae": -0.7585155999486233,
+        "rmse": 14.278882150319077
+      },
+      "train_rows": 7032,
+      "validation_rows": 1679,
+      "parameter_count": 865,
+      "training_seconds": 0.046999999991385266,
+      "checkpoint": "D:\\-YSCG\\artifacts\\harness-round\\B\\checkpoint.npz"
+    },
+    {
+      "profile": "C",
+      "task": "regression",
+      "baseline_id": "cpu-c-guide-20261110-v1",
+      "before": {
+        "mae": 38.89982982666355,
+        "rmse": 52.86857256611151
+      },
+      "after": {
+        "mae": 38.32219947028205,
+        "rmse": 52.36773488572831
+      },
+      "gain": {
+        "mae": 0.5776303563814977,
+        "rmse": 0.5008376803831993
+      },
+      "train_rows": 113089,
+      "validation_rows": 23049,
+      "parameter_count": 833,
+      "training_seconds": 0.5620000000053551,
+      "checkpoint": "D:\\-YSCG\\artifacts\\harness-round\\C\\checkpoint.npz"
+    }
+  ]
+}

@@ -1,0 +1,781 @@
+{
+  "experiments": [
+    {
+      "profile": "A",
+      "task": "classification",
+      "baseline_id": "cpu-a-guide-20261110-v1",
+      "champion_start": 0.726366315676049,
+      "best": 0.726366315676049,
+      "accepted_rounds": 0,
+      "unique_candidates": 10,
+      "unique_rate": 1.0,
+      "consecutive_duplicates": 0,
+      "state": {
+        "tried_config_hashes": [
+          "cfg:9689b0315a1ed037",
+          "cfg:b1066a09d8371112",
+          "cfg:982ee7e647c317e6",
+          "cfg:a286edb0fce090a2",
+          "cfg:cd9d8d75aa4fa1af",
+          "cfg:479f1a7a3f3bc9f1",
+          "cfg:e4abcc6192566d8a",
+          "cfg:ca577268487223b1",
+          "cfg:334e71016bc96c08",
+          "cfg:7e63ea040a40e14d"
+        ],
+        "rejected_config_hashes": [
+          "cfg:9689b0315a1ed037",
+          "cfg:b1066a09d8371112",
+          "cfg:982ee7e647c317e6",
+          "cfg:a286edb0fce090a2",
+          "cfg:cd9d8d75aa4fa1af",
+          "cfg:479f1a7a3f3bc9f1",
+          "cfg:e4abcc6192566d8a",
+          "cfg:ca577268487223b1",
+          "cfg:334e71016bc96c08",
+          "cfg:7e63ea040a40e14d"
+        ],
+        "candidate_hashes": [
+          "sha256:2cac19814b6938901dd20a692e80dcf5f64f7458bdbd4f23c4eb3485c2b36464",
+          "sha256:a6ad3fa184d34a07347052a6b8b0f78601fab6ce229995dc350b679b3d009784",
+          "sha256:109042a606f9dd415840bc3360bf686950c1b72d9e86b1bd44a8acf30dcb9c22",
+          "sha256:bced486fa93e3f7121eddf10e0b842b537554958c5ab78f228bfaa6c89349449",
+          "sha256:807995d9065834530ed8c9a7bfe5ac04e9e51bf2814cb38f50cc5817498f7954",
+          "sha256:130a556ed1ce54f2460978c7da3808079e749c3a38712c03e3db672ccc851def",
+          "sha256:e864e53a9f9e73cb0e9a7719ea173380443df2193edf596fd9ae31d1d99e0f7e",
+          "sha256:140d41f127fb97097e1f690af2c18170e15eb0ad30644dd57c58f706cce31401",
+          "sha256:52427e1628902c86c901b66d3a5b95864c2413af24a204132ece6c5c9a1db32e",
+          "sha256:d4dbea7aa775350484e35d6f9e52395dc8b73cf323c40bcf62e902a9799741bb"
+        ],
+        "anchor_floor": {
+          "primary": 0.726366315676049
+        },
+        "protective_memory": [],
+        "policy_params": {
+          "lr": 0.0003,
+          "l2": 0.0005,
+          "recency": 0.5,
+          "epochs": 1
+        },
+        "last_reject_reason": "未改善（0.7258 vs 0.7264），回滚保留父模型",
+        "drift_score": 0.0
+      },
+      "rounds": [
+        {
+          "round": 1,
+          "exploration_tag": "baseline_small_step",
+          "config_delta": {
+            "lr": 0.0005,
+            "epochs": 1
+          },
+          "config_hash": "cfg:9689b0315a1ed037",
+          "candidate_hash": "sha256:2cac19814b6938901dd20a692e80dcf5f64f7458bdbd4f23c4eb3485c2b36464",
+          "llm_call_id": "local-advisor-A-01",
+          "hypothesis": "baseline_small_step：在父模型上应用 {\"lr\": 0.0005, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "macro_f1 提升",
+          "primary_before": 0.726366315676049,
+          "primary_after": 0.726366315676049,
+          "accepted": false,
+          "reason": "未改善（0.7264 vs 0.7264），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 2,
+          "exploration_tag": "class_weight",
+          "config_delta": {
+            "class_weight": "balanced",
+            "epochs": 1
+          },
+          "config_hash": "cfg:b1066a09d8371112",
+          "candidate_hash": "sha256:a6ad3fa184d34a07347052a6b8b0f78601fab6ce229995dc350b679b3d009784",
+          "llm_call_id": "local-advisor-A-02",
+          "hypothesis": "class_weight：在父模型上应用 {\"class_weight\": \"balanced\", \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "macro_f1 提升",
+          "primary_before": 0.726366315676049,
+          "primary_after": 0.707850623994417,
+          "accepted": false,
+          "reason": "未改善（0.7079 vs 0.7264），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 3,
+          "exploration_tag": "low_lr",
+          "config_delta": {
+            "lr": 0.0003,
+            "epochs": 1
+          },
+          "config_hash": "cfg:982ee7e647c317e6",
+          "candidate_hash": "sha256:109042a606f9dd415840bc3360bf686950c1b72d9e86b1bd44a8acf30dcb9c22",
+          "llm_call_id": "local-advisor-A-03",
+          "hypothesis": "low_lr：在父模型上应用 {\"lr\": 0.0003, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "macro_f1 提升",
+          "primary_before": 0.726366315676049,
+          "primary_after": 0.726366315676049,
+          "accepted": false,
+          "reason": "未改善（0.7264 vs 0.7264），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 4,
+          "exploration_tag": "bootstrap_sample",
+          "config_delta": {
+            "bootstrap": 101,
+            "epochs": 1
+          },
+          "config_hash": "cfg:a286edb0fce090a2",
+          "candidate_hash": "sha256:bced486fa93e3f7121eddf10e0b842b537554958c5ab78f228bfaa6c89349449",
+          "llm_call_id": "local-advisor-A-04",
+          "hypothesis": "bootstrap_sample：在父模型上应用 {\"bootstrap\": 101, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "macro_f1 提升",
+          "primary_before": 0.726366315676049,
+          "primary_after": 0.7175298841969032,
+          "accepted": false,
+          "reason": "未改善（0.7175 vs 0.7264），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 5,
+          "exploration_tag": "small_lr_plus_l2",
+          "config_delta": {
+            "lr": 0.0002,
+            "l2": 0.001,
+            "epochs": 1
+          },
+          "config_hash": "cfg:cd9d8d75aa4fa1af",
+          "candidate_hash": "sha256:807995d9065834530ed8c9a7bfe5ac04e9e51bf2814cb38f50cc5817498f7954",
+          "llm_call_id": "local-advisor-A-05",
+          "hypothesis": "small_lr_plus_l2：在父模型上应用 {\"lr\": 0.0002, \"l2\": 0.001, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "macro_f1 提升",
+          "primary_before": 0.726366315676049,
+          "primary_after": 0.726366315676049,
+          "accepted": false,
+          "reason": "未改善（0.7264 vs 0.7264），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 6,
+          "exploration_tag": "bootstrap_plus_batch",
+          "config_delta": {
+            "bootstrap": 202,
+            "batch": 64,
+            "epochs": 1
+          },
+          "config_hash": "cfg:479f1a7a3f3bc9f1",
+          "candidate_hash": "sha256:130a556ed1ce54f2460978c7da3808079e749c3a38712c03e3db672ccc851def",
+          "llm_call_id": "local-advisor-A-06",
+          "hypothesis": "bootstrap_plus_batch：在父模型上应用 {\"bootstrap\": 202, \"batch\": 64, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "macro_f1 提升",
+          "primary_before": 0.726366315676049,
+          "primary_after": 0.6814959953035776,
+          "accepted": false,
+          "reason": "未改善（0.6815 vs 0.7264），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 7,
+          "exploration_tag": "ensemble_parent_candidate",
+          "config_delta": {
+            "lr": 0.0004,
+            "epochs": 1
+          },
+          "config_hash": "cfg:e4abcc6192566d8a",
+          "candidate_hash": "sha256:e864e53a9f9e73cb0e9a7719ea173380443df2193edf596fd9ae31d1d99e0f7e",
+          "llm_call_id": "local-advisor-A-07",
+          "hypothesis": "ensemble_parent_candidate：在父模型上应用 {\"lr\": 0.0004, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "macro_f1 提升",
+          "primary_before": 0.726366315676049,
+          "primary_after": 0.726366315676049,
+          "accepted": false,
+          "reason": "未改善（0.7264 vs 0.7264），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": 0.726366315676049
+        },
+        {
+          "round": 8,
+          "exploration_tag": "drift_window_weight",
+          "config_delta": {
+            "recency": 0.8,
+            "epochs": 1
+          },
+          "config_hash": "cfg:ca577268487223b1",
+          "candidate_hash": "sha256:140d41f127fb97097e1f690af2c18170e15eb0ad30644dd57c58f706cce31401",
+          "llm_call_id": "local-advisor-A-08",
+          "hypothesis": "drift_window_weight：在父模型上应用 {\"recency\": 0.8, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "macro_f1 提升",
+          "primary_before": 0.726366315676049,
+          "primary_after": 0.7134138098597874,
+          "accepted": false,
+          "reason": "未改善（0.7134 vs 0.7264），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 9,
+          "exploration_tag": "recalibrate",
+          "config_delta": {
+            "class_weight": "balanced",
+            "lr": 0.0004,
+            "epochs": 1
+          },
+          "config_hash": "cfg:334e71016bc96c08",
+          "candidate_hash": "sha256:52427e1628902c86c901b66d3a5b95864c2413af24a204132ece6c5c9a1db32e",
+          "llm_call_id": "local-advisor-A-09",
+          "hypothesis": "recalibrate：在父模型上应用 {\"class_weight\": \"balanced\", \"lr\": 0.0004, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "macro_f1 提升",
+          "primary_before": 0.726366315676049,
+          "primary_after": 0.726366315676049,
+          "accepted": false,
+          "reason": "未改善（0.7264 vs 0.7264），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 10,
+          "exploration_tag": "combine_best",
+          "config_delta": {
+            "lr": 0.0003,
+            "l2": 0.0005,
+            "recency": 0.5,
+            "epochs": 1
+          },
+          "config_hash": "cfg:7e63ea040a40e14d",
+          "candidate_hash": "sha256:d4dbea7aa775350484e35d6f9e52395dc8b73cf323c40bcf62e902a9799741bb",
+          "llm_call_id": "local-advisor-A-10",
+          "hypothesis": "combine_best：在父模型上应用 {\"lr\": 0.0003, \"l2\": 0.0005, \"recency\": 0.5, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "macro_f1 提升",
+          "primary_before": 0.726366315676049,
+          "primary_after": 0.7258429888617122,
+          "accepted": false,
+          "reason": "未改善（0.7258 vs 0.7264），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        }
+      ]
+    },
+    {
+      "profile": "B",
+      "task": "regression",
+      "baseline_id": "cpu-b-rul-20261110-v1",
+      "champion_start": 647.2394898137788,
+      "best": 647.2394898137788,
+      "accepted_rounds": 0,
+      "unique_candidates": 10,
+      "unique_rate": 1.0,
+      "consecutive_duplicates": 0,
+      "state": {
+        "tried_config_hashes": [
+          "cfg:9689b0315a1ed037",
+          "cfg:def1053833c0a166",
+          "cfg:8111ce93306d6255",
+          "cfg:e68b192f27d8ee1a",
+          "cfg:cd9d8d75aa4fa1af",
+          "cfg:64a7eb48c07dcf67",
+          "cfg:e4abcc6192566d8a",
+          "cfg:ca577268487223b1",
+          "cfg:7e63ea040a40e14d",
+          "cfg:e1ad82615213c732"
+        ],
+        "rejected_config_hashes": [
+          "cfg:9689b0315a1ed037",
+          "cfg:def1053833c0a166",
+          "cfg:8111ce93306d6255",
+          "cfg:e68b192f27d8ee1a",
+          "cfg:cd9d8d75aa4fa1af",
+          "cfg:64a7eb48c07dcf67",
+          "cfg:e4abcc6192566d8a",
+          "cfg:ca577268487223b1",
+          "cfg:7e63ea040a40e14d",
+          "cfg:e1ad82615213c732"
+        ],
+        "candidate_hashes": [
+          "sha256:c030468586bc4c6e24e5a3f0923eac732ee5399d01d506c336bd27c8ca02a1ec",
+          "sha256:59244c222d9b5cd0742f4d0fac70ac2cbc393a16406812912949be4a97547d61",
+          "sha256:7e7138e2352a5981b24f9f5f2e5efc72ea3a632074e6c0b52cc92d8aba5d9bd3",
+          "sha256:cc2731f57f310e361f0f9598c94d36afbcc4a14267119eb2debfd8d47ea73a7a",
+          "sha256:1e8553fc0b9fd31a208c8ce26bc5eb0aa6ea684d4f63904294eef93f063cedb8",
+          "sha256:20cf7564f542fe0407a482615311bf4efff2f0be76af813dc650ff5240c8777e",
+          "sha256:8e9d16318011ab1d078edf7f540de1a3b57abab0ef183d4a33f2a45bc462104e",
+          "sha256:363c475001c17b4ff04378da937eb0511f9da8e1c7c15ae1f7f567677e863a02",
+          "sha256:ba9c9741215001bb193f651e34d6a00b87406fd03fba3fb9e4c094e558c67f7e",
+          "sha256:e064343a4971f0d526d000d6d5ae408e189e4fc4183e6f7d8d947d99118e1dfd"
+        ],
+        "anchor_floor": {
+          "primary": 647.2394898137788
+        },
+        "protective_memory": [],
+        "policy_params": {
+          "lr": 0.0003,
+          "l2": 0.0005,
+          "recency": 0.5,
+          "epochs": 1,
+          "seed": 1010
+        },
+        "last_reject_reason": "未改善（661.6447 vs 647.2395），回滚保留父模型",
+        "drift_score": 0.0
+      },
+      "rounds": [
+        {
+          "round": 1,
+          "exploration_tag": "baseline_small_step",
+          "config_delta": {
+            "lr": 0.0005,
+            "epochs": 1
+          },
+          "config_hash": "cfg:9689b0315a1ed037",
+          "candidate_hash": "sha256:c030468586bc4c6e24e5a3f0923eac732ee5399d01d506c336bd27c8ca02a1ec",
+          "llm_call_id": "local-advisor-B-01",
+          "hypothesis": "baseline_small_step：在父模型上应用 {\"lr\": 0.0005, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "rmse 下降",
+          "primary_before": 647.2394898137788,
+          "primary_after": 669.4479328806271,
+          "accepted": false,
+          "reason": "未改善（669.4479 vs 647.2395），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 2,
+          "exploration_tag": "window_recency",
+          "config_delta": {
+            "recency": 0.5,
+            "epochs": 1
+          },
+          "config_hash": "cfg:def1053833c0a166",
+          "candidate_hash": "sha256:59244c222d9b5cd0742f4d0fac70ac2cbc393a16406812912949be4a97547d61",
+          "llm_call_id": "local-advisor-B-02",
+          "hypothesis": "window_recency：在父模型上应用 {\"recency\": 0.5, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "rmse 下降",
+          "primary_before": 647.2394898137788,
+          "primary_after": 681.7233249397308,
+          "accepted": false,
+          "reason": "未改善（681.7233 vs 647.2395），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 3,
+          "exploration_tag": "huber_loss",
+          "config_delta": {
+            "huber": true,
+            "epochs": 1
+          },
+          "config_hash": "cfg:8111ce93306d6255",
+          "candidate_hash": "sha256:7e7138e2352a5981b24f9f5f2e5efc72ea3a632074e6c0b52cc92d8aba5d9bd3",
+          "llm_call_id": "local-advisor-B-03",
+          "hypothesis": "huber_loss：在父模型上应用 {\"huber\": true, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "rmse 下降",
+          "primary_before": 647.2394898137788,
+          "primary_after": 678.3988388353379,
+          "accepted": false,
+          "reason": "未改善（678.3988 vs 647.2395），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 4,
+          "exploration_tag": "reg_early_stop",
+          "config_delta": {
+            "l2": 0.002,
+            "epochs": 1
+          },
+          "config_hash": "cfg:e68b192f27d8ee1a",
+          "candidate_hash": "sha256:cc2731f57f310e361f0f9598c94d36afbcc4a14267119eb2debfd8d47ea73a7a",
+          "llm_call_id": "local-advisor-B-04",
+          "hypothesis": "reg_early_stop：在父模型上应用 {\"l2\": 0.002, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "rmse 下降",
+          "primary_before": 647.2394898137788,
+          "primary_after": 674.8796279415818,
+          "accepted": false,
+          "reason": "未改善（674.8796 vs 647.2395），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 5,
+          "exploration_tag": "small_lr_plus_l2",
+          "config_delta": {
+            "lr": 0.0002,
+            "l2": 0.001,
+            "epochs": 1
+          },
+          "config_hash": "cfg:cd9d8d75aa4fa1af",
+          "candidate_hash": "sha256:1e8553fc0b9fd31a208c8ce26bc5eb0aa6ea684d4f63904294eef93f063cedb8",
+          "llm_call_id": "local-advisor-B-05",
+          "hypothesis": "small_lr_plus_l2：在父模型上应用 {\"lr\": 0.0002, \"l2\": 0.001, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "rmse 下降",
+          "primary_before": 647.2394898137788,
+          "primary_after": 661.4968288255034,
+          "accepted": false,
+          "reason": "未改善（661.4968 vs 647.2395），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 6,
+          "exploration_tag": "outlier_robust",
+          "config_delta": {
+            "huber": true,
+            "batch": 64,
+            "epochs": 1
+          },
+          "config_hash": "cfg:64a7eb48c07dcf67",
+          "candidate_hash": "sha256:20cf7564f542fe0407a482615311bf4efff2f0be76af813dc650ff5240c8777e",
+          "llm_call_id": "local-advisor-B-06",
+          "hypothesis": "outlier_robust：在父模型上应用 {\"huber\": true, \"batch\": 64, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "rmse 下降",
+          "primary_before": 647.2394898137788,
+          "primary_after": 666.8593123199225,
+          "accepted": false,
+          "reason": "未改善（666.8593 vs 647.2395），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 7,
+          "exploration_tag": "ensemble_parent_candidate",
+          "config_delta": {
+            "lr": 0.0004,
+            "epochs": 1
+          },
+          "config_hash": "cfg:e4abcc6192566d8a",
+          "candidate_hash": "sha256:8e9d16318011ab1d078edf7f540de1a3b57abab0ef183d4a33f2a45bc462104e",
+          "llm_call_id": "local-advisor-B-07",
+          "hypothesis": "ensemble_parent_candidate：在父模型上应用 {\"lr\": 0.0004, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "rmse 下降",
+          "primary_before": 647.2394898137788,
+          "primary_after": 668.3549811822677,
+          "accepted": false,
+          "reason": "未改善（668.3550 vs 647.2395），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": 657.6221837159178
+        },
+        {
+          "round": 8,
+          "exploration_tag": "drift_window_weight",
+          "config_delta": {
+            "recency": 0.8,
+            "epochs": 1
+          },
+          "config_hash": "cfg:ca577268487223b1",
+          "candidate_hash": "sha256:363c475001c17b4ff04378da937eb0511f9da8e1c7c15ae1f7f567677e863a02",
+          "llm_call_id": "local-advisor-B-08",
+          "hypothesis": "drift_window_weight：在父模型上应用 {\"recency\": 0.8, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "rmse 下降",
+          "primary_before": 647.2394898137788,
+          "primary_after": 681.7872404919983,
+          "accepted": false,
+          "reason": "未改善（681.7872 vs 647.2395），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 9,
+          "exploration_tag": "combine_best",
+          "config_delta": {
+            "lr": 0.0003,
+            "l2": 0.0005,
+            "recency": 0.5,
+            "epochs": 1
+          },
+          "config_hash": "cfg:7e63ea040a40e14d",
+          "candidate_hash": "sha256:ba9c9741215001bb193f651e34d6a00b87406fd03fba3fb9e4c094e558c67f7e",
+          "llm_call_id": "local-advisor-B-09",
+          "hypothesis": "combine_best：在父模型上应用 {\"lr\": 0.0003, \"l2\": 0.0005, \"recency\": 0.5, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "rmse 下降",
+          "primary_before": 647.2394898137788,
+          "primary_after": 660.9903955131866,
+          "accepted": false,
+          "reason": "未改善（660.9904 vs 647.2395），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 10,
+          "exploration_tag": "combine_best",
+          "config_delta": {
+            "lr": 0.0003,
+            "l2": 0.0005,
+            "recency": 0.5,
+            "epochs": 1,
+            "seed": 1010
+          },
+          "config_hash": "cfg:e1ad82615213c732",
+          "candidate_hash": "sha256:e064343a4971f0d526d000d6d5ae408e189e4fc4183e6f7d8d947d99118e1dfd",
+          "llm_call_id": "local-advisor-B-10",
+          "hypothesis": "combine_best：在父模型上应用 {\"lr\": 0.0003, \"l2\": 0.0005, \"recency\": 0.5, \"epochs\": 1, \"seed\": 1010}，期望验证指标改善",
+          "expected_effect": "rmse 下降",
+          "primary_before": 647.2394898137788,
+          "primary_after": 661.6447023274751,
+          "accepted": false,
+          "reason": "未改善（661.6447 vs 647.2395），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        }
+      ]
+    },
+    {
+      "profile": "C",
+      "task": "regression",
+      "baseline_id": "cpu-c-guide-20261110-v1",
+      "champion_start": 51.933885489408866,
+      "best": 51.65894389744014,
+      "accepted_rounds": 3,
+      "unique_candidates": 10,
+      "unique_rate": 1.0,
+      "consecutive_duplicates": 0,
+      "state": {
+        "tried_config_hashes": [
+          "cfg:9689b0315a1ed037",
+          "cfg:def1053833c0a166",
+          "cfg:8111ce93306d6255",
+          "cfg:e68b192f27d8ee1a",
+          "cfg:cd9d8d75aa4fa1af",
+          "cfg:64a7eb48c07dcf67",
+          "cfg:e4abcc6192566d8a",
+          "cfg:ca577268487223b1",
+          "cfg:7e63ea040a40e14d",
+          "cfg:e1ad82615213c732"
+        ],
+        "rejected_config_hashes": [
+          "cfg:9689b0315a1ed037",
+          "cfg:8111ce93306d6255",
+          "cfg:e68b192f27d8ee1a",
+          "cfg:64a7eb48c07dcf67",
+          "cfg:e4abcc6192566d8a",
+          "cfg:ca577268487223b1",
+          "cfg:7e63ea040a40e14d"
+        ],
+        "candidate_hashes": [
+          "sha256:d81ceec1ce4c37cd096b2e489c66517bfc9380d8c13f7fb9c10a29b89ee5cf54",
+          "sha256:e536cfda0d8b225f98f98f3e4cbc8152a428233e3691cbe07fe651041606ac30",
+          "sha256:16c43b27dcecc26d5db6bc2517cf6026b817e69397fa02b41f67dff3e685dc3f",
+          "sha256:b976296e1bccc0f5b99050fcc16c898c8be38fc49a5bf5ce0018891c441001bd",
+          "sha256:20bc47f08099ddcd2d59417232910daaf9e600607634c59cd4f460a178b8015f",
+          "sha256:237fc3c0eb4a0fe88f4f2fb894b7631d3ec40d0cea8982880f8d55701d220415",
+          "sha256:eb05cdd42977081d805e3b4492e28e0d9a6594fba192004f16cc45d49e0248ad",
+          "sha256:4bb4d73ac0f2c155ba4515b15302b26a3ebe303ad32d47a4aff69a1a7761402c",
+          "sha256:2060d766b934c6562485a5c7fc345e45dd37a8a0c0aba96c4b509dbe5df1f733",
+          "sha256:770f24095e5ade95fe27e878a289820a107892e745a4813c49215a1cb6bd030c"
+        ],
+        "anchor_floor": {
+          "primary": 51.65894389744014
+        },
+        "protective_memory": [],
+        "policy_params": {
+          "lr": 0.0003,
+          "l2": 0.0005,
+          "recency": 0.5,
+          "epochs": 1,
+          "seed": 1010
+        },
+        "last_reject_reason": "",
+        "drift_score": 0.0
+      },
+      "rounds": [
+        {
+          "round": 1,
+          "exploration_tag": "baseline_small_step",
+          "config_delta": {
+            "lr": 0.0005,
+            "epochs": 1
+          },
+          "config_hash": "cfg:9689b0315a1ed037",
+          "candidate_hash": "sha256:d81ceec1ce4c37cd096b2e489c66517bfc9380d8c13f7fb9c10a29b89ee5cf54",
+          "llm_call_id": "local-advisor-C-01",
+          "hypothesis": "baseline_small_step：在父模型上应用 {\"lr\": 0.0005, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "rmse 下降",
+          "primary_before": 51.933885489408866,
+          "primary_after": 51.93439469263057,
+          "accepted": false,
+          "reason": "未改善（51.9344 vs 51.9339），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 2,
+          "exploration_tag": "window_recency",
+          "config_delta": {
+            "recency": 0.5,
+            "epochs": 1
+          },
+          "config_hash": "cfg:def1053833c0a166",
+          "candidate_hash": "sha256:e536cfda0d8b225f98f98f3e4cbc8152a428233e3691cbe07fe651041606ac30",
+          "llm_call_id": "local-advisor-C-02",
+          "hypothesis": "window_recency：在父模型上应用 {\"recency\": 0.5, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "rmse 下降",
+          "primary_before": 51.933885489408866,
+          "primary_after": 51.81000599305141,
+          "accepted": true,
+          "reason": "改善 -0.1239，接受为新 champion",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 3,
+          "exploration_tag": "huber_loss",
+          "config_delta": {
+            "huber": true,
+            "epochs": 1
+          },
+          "config_hash": "cfg:8111ce93306d6255",
+          "candidate_hash": "sha256:16c43b27dcecc26d5db6bc2517cf6026b817e69397fa02b41f67dff3e685dc3f",
+          "llm_call_id": "local-advisor-C-03",
+          "hypothesis": "huber_loss：在父模型上应用 {\"huber\": true, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "rmse 下降",
+          "primary_before": 51.81000599305141,
+          "primary_after": 52.170801808210385,
+          "accepted": false,
+          "reason": "未改善（52.1708 vs 51.8100），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 4,
+          "exploration_tag": "reg_early_stop",
+          "config_delta": {
+            "l2": 0.002,
+            "epochs": 1
+          },
+          "config_hash": "cfg:e68b192f27d8ee1a",
+          "candidate_hash": "sha256:b976296e1bccc0f5b99050fcc16c898c8be38fc49a5bf5ce0018891c441001bd",
+          "llm_call_id": "local-advisor-C-04",
+          "hypothesis": "reg_early_stop：在父模型上应用 {\"l2\": 0.002, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "rmse 下降",
+          "primary_before": 51.81000599305141,
+          "primary_after": 53.352934845996366,
+          "accepted": false,
+          "reason": "未改善（53.3529 vs 51.8100），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 5,
+          "exploration_tag": "small_lr_plus_l2",
+          "config_delta": {
+            "lr": 0.0002,
+            "l2": 0.001,
+            "epochs": 1
+          },
+          "config_hash": "cfg:cd9d8d75aa4fa1af",
+          "candidate_hash": "sha256:20bc47f08099ddcd2d59417232910daaf9e600607634c59cd4f460a178b8015f",
+          "llm_call_id": "local-advisor-C-05",
+          "hypothesis": "small_lr_plus_l2：在父模型上应用 {\"lr\": 0.0002, \"l2\": 0.001, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "rmse 下降",
+          "primary_before": 51.81000599305141,
+          "primary_after": 51.74246327573544,
+          "accepted": true,
+          "reason": "改善 -0.0675，接受为新 champion",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 6,
+          "exploration_tag": "outlier_robust",
+          "config_delta": {
+            "huber": true,
+            "batch": 64,
+            "epochs": 1
+          },
+          "config_hash": "cfg:64a7eb48c07dcf67",
+          "candidate_hash": "sha256:237fc3c0eb4a0fe88f4f2fb894b7631d3ec40d0cea8982880f8d55701d220415",
+          "llm_call_id": "local-advisor-C-06",
+          "hypothesis": "outlier_robust：在父模型上应用 {\"huber\": true, \"batch\": 64, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "rmse 下降",
+          "primary_before": 51.74246327573544,
+          "primary_after": 51.86068020736975,
+          "accepted": false,
+          "reason": "未改善（51.8607 vs 51.7425），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 7,
+          "exploration_tag": "ensemble_parent_candidate",
+          "config_delta": {
+            "lr": 0.0004,
+            "epochs": 1
+          },
+          "config_hash": "cfg:e4abcc6192566d8a",
+          "candidate_hash": "sha256:eb05cdd42977081d805e3b4492e28e0d9a6594fba192004f16cc45d49e0248ad",
+          "llm_call_id": "local-advisor-C-07",
+          "hypothesis": "ensemble_parent_candidate：在父模型上应用 {\"lr\": 0.0004, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "rmse 下降",
+          "primary_before": 51.74246327573544,
+          "primary_after": 51.869704272636405,
+          "accepted": false,
+          "reason": "未改善（51.8697 vs 51.7425），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": 51.78274613081183
+        },
+        {
+          "round": 8,
+          "exploration_tag": "drift_window_weight",
+          "config_delta": {
+            "recency": 0.8,
+            "epochs": 1
+          },
+          "config_hash": "cfg:ca577268487223b1",
+          "candidate_hash": "sha256:4bb4d73ac0f2c155ba4515b15302b26a3ebe303ad32d47a4aff69a1a7761402c",
+          "llm_call_id": "local-advisor-C-08",
+          "hypothesis": "drift_window_weight：在父模型上应用 {\"recency\": 0.8, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "rmse 下降",
+          "primary_before": 51.74246327573544,
+          "primary_after": 51.85195736076208,
+          "accepted": false,
+          "reason": "未改善（51.8520 vs 51.7425），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 9,
+          "exploration_tag": "combine_best",
+          "config_delta": {
+            "lr": 0.0003,
+            "l2": 0.0005,
+            "recency": 0.5,
+            "epochs": 1
+          },
+          "config_hash": "cfg:7e63ea040a40e14d",
+          "candidate_hash": "sha256:2060d766b934c6562485a5c7fc345e45dd37a8a0c0aba96c4b509dbe5df1f733",
+          "llm_call_id": "local-advisor-C-09",
+          "hypothesis": "combine_best：在父模型上应用 {\"lr\": 0.0003, \"l2\": 0.0005, \"recency\": 0.5, \"epochs\": 1}，期望验证指标改善",
+          "expected_effect": "rmse 下降",
+          "primary_before": 51.74246327573544,
+          "primary_after": 51.81257499904007,
+          "accepted": false,
+          "reason": "未改善（51.8126 vs 51.7425），回滚保留父模型",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        },
+        {
+          "round": 10,
+          "exploration_tag": "combine_best",
+          "config_delta": {
+            "lr": 0.0003,
+            "l2": 0.0005,
+            "recency": 0.5,
+            "epochs": 1,
+            "seed": 1010
+          },
+          "config_hash": "cfg:e1ad82615213c732",
+          "candidate_hash": "sha256:770f24095e5ade95fe27e878a289820a107892e745a4813c49215a1cb6bd030c",
+          "llm_call_id": "local-advisor-C-10",
+          "hypothesis": "combine_best：在父模型上应用 {\"lr\": 0.0003, \"l2\": 0.0005, \"recency\": 0.5, \"epochs\": 1, \"seed\": 1010}，期望验证指标改善",
+          "expected_effect": "rmse 下降",
+          "primary_before": 51.74246327573544,
+          "primary_after": 51.65894389744014,
+          "accepted": true,
+          "reason": "改善 -0.0835，接受为新 champion",
+          "duplicate_candidate": false,
+          "ensemble_primary": null
+        }
+      ]
+    }
+  ]
+}

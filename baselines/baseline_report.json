@@ -1,0 +1,46 @@
+{
+  "baselines": [
+    {
+      "profile": "A",
+      "dataset_key": "A",
+      "task": "classification",
+      "baseline_id": "cpu-a-guide-20261110-v1",
+      "parameter_count": 4326,
+      "checkpoint_sha256": "sha256:fd1e08b2aad08b2e9754f9b2dfdc029481c0da7ecdedca0abb0ec6fcc818c757",
+      "checkpoint_sha256_match": true,
+      "metrics": {
+        "accuracy": 0.8786173633440515,
+        "macro_f1": 0.7140297220788709,
+        "n": 1244
+      }
+    },
+    {
+      "profile": "B",
+      "dataset_key": "B",
+      "task": "regression",
+      "baseline_id": "cpu-b-rul-20261110-v1",
+      "parameter_count": 865,
+      "checkpoint_sha256": "sha256:c7d819fcee9d25459c583b5ffdb35593d4a47b524ed152d0226bf81a283314b4",
+      "checkpoint_sha256_match": true,
+      "metrics": {
+        "rmse": 681.1598326043113,
+        "mae": 563.1058414514887,
+        "n": 1679
+      }
+    },
+    {
+      "profile": "C",
+      "dataset_key": "C",
+      "task": "regression",
+      "baseline_id": "cpu-c-guide-20261110-v1",
+      "parameter_count": 833,
+      "checkpoint_sha256": "sha256:98ec6e30e38aee56ca15b7d624a8f412226d46fe97b170667a567601c700bc4e",
+      "checkpoint_sha256_match": true,
+      "metrics": {
+        "rmse": 52.86857256611151,
+        "mae": 38.89982982666355,
+        "n": 23049
+      }
+    }
+  ]
+}

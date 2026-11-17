@@ -202,3 +202,14 @@ checkpoints/
 # 评测镜像构建缓存
 .dockerignore.tmp
 docker/build/
+# pip 源码构建临时目录（pip install 中断后可能残留）
+pip-build-tracker-*/
+.wheels/
+# 官方基线包内的大数据（public 训练/验证集），不入库
+baselines/*/public/
+
+# 官方基线包与官方 SDK（本地解压，不入库；复现说明见 baselines/README 或提交说明）
+baselines/a/
+baselines/b/
+baselines/c/
+sdk/
