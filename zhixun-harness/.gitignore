@@ -1,0 +1,23 @@
+# Keep the organizer packages and all local build or training artifacts outside Git.
+/a-气体识别/
+/b-轴承剩余寿命预测/
+/c-发动机寿命预测/
+/stage2_official/sdk/
+/.venv*/
+__pycache__/
+runs/
+build/
+evidence/
+swanlog/
+test-harness-*/
+*.pyc
+*.npz
+*.jsonl
+*.tar
+*.tar.gz
+*.zip
+*.whl
+*.swanlab
+.env
+.env.*
+/初始模型运行结果.md
