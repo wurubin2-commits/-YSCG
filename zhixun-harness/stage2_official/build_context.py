@@ -24,6 +24,9 @@ def build(output, wheelhouse=None):
     copy(source / "sdk/template/harness.py", "app/harness.py")
     copy(source / "contest_submission.py", "app/contest_submission.py")
     copy(source / "trainer.py", "app/stage2_official/trainer.py")
+    copy(source / "policy.py", "app/stage2_official/policy.py")
+    copy(source / "continuation.py", "app/stage2_official/continuation.py")
+    copy(source / "drift.py", "app/stage2_official/drift.py")
     copy(ROOT / "stage1_local/common.py", "app/stage1_local/common.py")
     copy(ROOT / "stage2_local/planner.py", "app/stage2_local/planner.py")
     for name in ("pyproject.toml", "README.md"):

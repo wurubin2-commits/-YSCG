@@ -15,7 +15,10 @@ from contest_harness.errors import HarnessError
 from pydantic import ValidationError
 
 from stage1_local.common import ROOT, sha256
-from stage2_local.planner import Proposal
+from stage2_official.policy import (
+    Experiment, OUTPUT_TOKEN_LIMIT, PROMPT, RECIPES, already_trained, compact_score,
+    effective_parameters, experiment_key, history_feedback,
+)
 from stage2_official.trainer import baseline
 
 TASKS = ("classification", "regression")
@@ -105,7 +108,10 @@ def train(rnd):
     model = baseline(task, "model").Model.load(path)
     if model.meta["profile"] != task or model.meta["task"] != kind:
         raise ValueError("Parent checkpoint does not match the task")
-    if task == "B" and model.meta.get("target_unit") != "minutes":
+    unit = {"B": "minutes", "C": "cycles"}.get(task)
+    if unit and (rnd.task.get("target_unit", unit) != unit or model.meta.get("target_unit", unit) != unit):
+        raise ValueError("Unexpected regression unit")
+    if task == "B" and model.meta.get("target_unit") != unit:
         raise ValueError("B must use the bearing minutes checkpoint")
     seed = model.meta["seed"]
     history = rnd.history()
@@ -114,36 +120,76 @@ def train(rnd):
     prior = read_object(evidence) if evidence.exists() else []
     if (not isinstance(prior, list) or any(item["task"] != task or item["round"] >= rnd.round_index for item in prior)):
         raise ValueError("Unexpected state for this task and round")
-    remaining = MAX_EPOCHS - sum(item["epochs_attempted"] for item in prior)
-    batch = summarize(rnd.data.training_rows(), kind)
+    remaining = max(0, MAX_EPOCHS - sum(item["epochs_attempted"] for item in prior))
+    research = os.environ.get("ZHIXUN_RESEARCH_MODE") == "1"
+    recipes = RECIPES[task] if research else ("standard",)
+    rows = rnd.data.training_rows()
+    if research:
+        from stage2_official.drift import drift_score, histogram, sample_rows
+        rows, sample = sample_rows(rows)
+    summary_started = time.monotonic()
+    batch = summarize(rows, kind)
+    current_distribution = shift = None
+    if research:
+        current_distribution = histogram(sample, model, baseline(task, "data").flatten)
+        shift = drift_score(prior[-1].get("feature_histogram") if prior else None, current_distribution)
+    parent_sha = sha256(path)
+    train_sha, validation_sha = sha256(rnd.data.train_path), sha256(rnd.data.validation_path)
+    parent_score = official_score(rnd.frame.get("current_validation"), metric)
+    if parent_score is None:
+        # Reuse a score only for the exact same checkpoint and validation projection.
+        for item in reversed(prior):
+            if item.get("validation_sha256") == validation_sha and item["selected_artifact"] == rnd.parent.artifact_id:
+                parent_score = item.get("candidate_public_score" if item["decision"] == "adopted"
+                                        else "parent_public_score")
+                if parent_score is not None:
+                    break
     prompt = {"task": task, "metric": metric, "direction": direction, "round": rnd.round_index,
-              "batch": batch, "remaining_epochs": remaining, "parent_configuration": {
-                  key: model.meta[key] for key in ("batch_size", "learning_rate", "epochs")},
-              "history": [{k: item[k] for k in ("id", "hypothesis", "reason") if k in item} for item in history[-5:]],
-              "prior_batches": [{"batch": item["batch"], "decision": item["decision"]} for item in prior[-3:]]}
-    reply = rnd.model([
-        {"role": "system", "content": "Analyze this public batch and prior attempts. Propose one useful CPU "
-         "continuation or keep action. Prefer testing justified bounded hypotheses early so the system can "
-         "compare at least three experiments. Output only JSON matching this schema: "
-         + json.dumps(Proposal.model_json_schema())},
-        {"role": "user", "content": json.dumps(prompt, ensure_ascii=False, allow_nan=False)},
-    ], max_tokens=min(512, rnd.max_output_tokens), temperature=0)
+              "parent_score": compact_score(parent_score),
+              "parent_params": {"rate": model.meta["learning_rate"], "batch": model.meta["batch_size"]},
+              "measured_trials": sum(item.get("candidate_public_score") is not None for item in prior),
+              "batch": {**batch}, "remaining_epochs": remaining,
+              "results": history_feedback(prior, history, parent_sha, train_sha, rnd.round_index)}
+    if unit:
+        prompt["unit"] = unit
+        prompt["batch"]["target_mean"] = compact_score(batch["target_mean"])
+    instructions = PROMPT + " Scores are [parent,candidate]. Never repeat same_batch parameters."
+    if research:
+        prompt.update(allowed_recipes=recipes, batch_shift=shift)
+        instructions += " Train may include an allowed recipe."
+    messages = [{"role": "system", "content": instructions},
+                {"role": "user", "content": json.dumps(prompt, ensure_ascii=False, separators=(",", ":"),
+                                                       allow_nan=False)}]
+    summary_seconds = time.monotonic() - summary_started
+    token_limit = min(OUTPUT_TOKEN_LIMIT, rnd.max_output_tokens)
+    model_started = time.monotonic()
+    reply = rnd.model(messages, max_tokens=token_limit, temperature=0)
+    model_seconds = time.monotonic() - model_started
 
     selected = rnd.parent.artifact_id
     hypothesis, change = "Check whether a bounded update is justified", "Parent checkpoint retained"
     status, spend, config = "invalid_suggestion", 0, {}
-    report, candidate_id, parent_score, candidate_score = None, None, None, None
+    report, candidate_id, candidate_score = None, None, None
+    # Only the host's same-round score is official decision evidence.
+    parent_score = official_score(rnd.frame.get("current_validation"), metric)
+    key = None
     trial = directory / "trial"
     reason = "The model returned a suggestion outside the accepted schema."
     try:
-        proposal = Proposal.model_validate_json(reply.text or "")
+        proposal = Experiment.model_validate_json(reply.text or "")
     except ValidationError:
         proposal = None
     if proposal is not None:
         hypothesis = proposal.reason
         config = proposal.model_dump(exclude_none=True)
+        if proposal.action == "train":
+            key = experiment_key(task, parent_sha, train_sha, seed, effective_parameters(proposal))
         if proposal.action == "keep":
             status, reason = "model_keep", "The model advised retaining the current parent."
+        elif proposal.recipe not in recipes:
+            status, reason = "invalid_suggestion", "The proposed recipe is unavailable for this task."
+        elif already_trained(prior, key):
+            status, reason = "duplicate_keep", "The same parent, training data, seed and effective parameters already ran."
         elif proposal.epochs > remaining:
             status, reason = "budget_keep", "The requested epochs exceed the remaining allocation."
         else:
@@ -155,20 +201,24 @@ def train(rnd):
                 try:
                     subprocess.run([sys.executable, "-B", "-m", "stage2_official.trainer", task,
                                     str(rnd.data.train_path), str(rnd.data.validation_path), str(path), str(trial),
-                                    f"{task}-{rnd.round_index}", str(proposal.rate), str(proposal.batch), str(spend)],
+                                    f"{task}-{rnd.round_index}", str(proposal.rate), str(proposal.batch), str(spend),
+                                    "--recipe", proposal.recipe],
                                    stdin=subprocess.DEVNULL, stdout=sys.stderr, stderr=sys.stderr,
                                    cwd=ROOT, timeout=available, check=True)
                     report = read_object(trial / "training.json")
-                    if report["parent_checkpoint_sha256"].removeprefix("sha256:") != sha256(path).removeprefix("sha256:"):
+                    if report["parent_checkpoint_sha256"].removeprefix("sha256:") != parent_sha.removeprefix("sha256:"):
                         raise ValueError("Wrong parent in trainer receipt")
                     if (report["checkpoint_sha256"] != sha256(trial / "checkpoint.npz")
-                            or report["final_steps"] <= model.meta["steps"]):
+                            or report["final_steps"] <= model.meta["steps"]
+                            or report["train_sha256"] != train_sha
+                            or report["validation_sha256"] != validation_sha):
                         raise ValueError("The trainer produced an invalid continuation")
                 except (subprocess.SubprocessError, OSError, ValueError) as error:
                     status, reason = "training_failed", f"Continuation failed: {type(error).__name__}."
                     report = None
                 if report is not None:
-                    change = f"Ran {spend} CPU epoch(s), learning rate {proposal.rate}, batch {proposal.batch}."
+                    change = (f"Ran {spend} CPU epoch(s) with {proposal.recipe}, "
+                              f"learning rate {proposal.rate}, batch {proposal.batch}.")
                     try:
                         submitted = rnd.submit_candidate(trial, hypothesis=hypothesis, change_summary=change,
                                                          configuration=config, seed=seed,
@@ -179,23 +229,38 @@ def train(rnd):
                     else:
                         candidate_id = submitted["artifact_id"]
                         better, parent_score, candidate_score, source = assess(rnd, report, submitted, metric, direction)
-                        if better:
+                        blocked = [row["slice"] for row in report.get("stability", []) if not row["passed"]]
+                        if better and blocked:
+                            status = "stability_keep"
+                            reason = "Parent retained after degradation on public slices: " + ", ".join(blocked)
+                        elif better:
                             selected = candidate_id
-                        status = "adopted" if better else "measured_keep"
-                        reason = f"{'Candidate adopted' if better else 'Parent retained'} based on {source}."
+                            status, reason = "adopted", f"Candidate adopted based on {source}."
+                        else:
+                            status, reason = "measured_keep", f"Parent retained based on {source}."
 
     usage = reply.response.get("usage") or {}
     token_counts = {key: usage[key] for key in ("prompt_tokens", "completion_tokens", "total_tokens")
                     if type(usage.get(key)) is int}
     record = {"task": task, "round": rnd.round_index, "batch": batch, "decision": status,
+              "batch_shift": shift, "feature_histogram": current_distribution,
               "reason": reason, "hypothesis": hypothesis, "configuration": config, "seed": seed,
               "parent_artifact": rnd.parent.artifact_id, "candidate_artifact": candidate_id, "selected_artifact": selected,
-              "parent_sha256": sha256(path), "candidate_sha256": report["checkpoint_sha256"] if report else None,
+              "parent_sha256": parent_sha, "candidate_sha256": report["checkpoint_sha256"] if report else None,
+              "experiment_key": key, "train_sha256": train_sha, "validation_sha256": validation_sha,
               "metric": metric, "parent_public_score": parent_score, "candidate_public_score": candidate_score,
+              "gain": ((candidate_score - parent_score) * (1 if direction == "higher" else -1)
+                       if parent_score is not None and candidate_score is not None else None),
               "local_train_receipt": report, "epochs_attempted": spend, "model": rnd.model_name,
               "model_call_ids": list(rnd.call_ids), "history_ids": list(rnd.history_ids), "usage": token_counts,
+              "prompt_bytes": sum(len(item["content"].encode("utf-8")) for item in messages),
+              "output_token_limit": token_limit, "feedback_rounds": [row["round"] for row in prompt["results"]],
+              "summary_seconds": round(summary_seconds, 4), "model_seconds": round(model_seconds, 4),
               "elapsed_seconds": round(time.monotonic() - started, 4)}
-    evidence.write_text(json.dumps([*prior, record], ensure_ascii=False, indent=2, allow_nan=False), encoding="utf-8")
+    for item in prior:
+        item.pop("feature_histogram", None)
+    evidence.write_text(json.dumps([*prior, record], ensure_ascii=False, separators=(",", ":"), allow_nan=False),
+                        encoding="utf-8")
     rnd.save_state(state)
     rnd.finish(selected_artifact_id=selected, hypothesis=hypothesis, change_summary=change, reason=reason,
                configuration=config, seed=seed, history_ids=list(rnd.history_ids), model_call_ids=list(rnd.call_ids))

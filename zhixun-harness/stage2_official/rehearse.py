@@ -11,6 +11,7 @@ import re
 import subprocess
 import sys
 import threading
+import time
 
 from stage1_local.common import ROOT, package, sha256, write_json
 from stage2_official.trainer import baseline
@@ -141,7 +142,10 @@ def run_round(task, idx, directory, train, validation, parent, history, prior_st
     if prior_state:
         mounts.append((prior_state, "/state", True))
     variables = ({} if image else {"CONTEST_WORK": str(work), "ZHIXUN_TEST_PREVIOUS": str(parent.parent)})
+    if scenario == "recipes":
+        variables["ZHIXUN_RESEARCH_MODE"] = "1"
     trace, model_ids = [], []
+    requests = []
     candidate, final_state, decision = None, None, None
     with process("train", directory, image=image, mounts=mounts, variables=variables) as child:
         send(child, start)
@@ -177,6 +181,8 @@ def run_round(task, idx, directory, train, validation, parent, history, prior_st
             elif protocol == "model_request":
                 if frame["max_tokens"] > 512:
                     raise AssertionError("Unbounded mock request")
+                requests.append({"prompt_bytes": sum(len(m["content"].encode("utf-8")) for m in frame["messages"]),
+                                 "output_token_limit": frame["max_tokens"]})
                 if scenario == "missing_call":
                     model_id = ""
                 else:
@@ -185,6 +191,17 @@ def run_round(task, idx, directory, train, validation, parent, history, prior_st
                 proposal = {"action": "train", "reason": f"Test bounded continuation on public batch {idx}",
                             "rate": (0.001, 0.0005, 0.00075)[(idx - 1) % 3],
                             "batch": 256 if task == "C" else 128, "epochs": 1}
+                if scenario in ("duplicate", "fixed", "repeat_pairs"):
+                    proposal["rate"] = 0.001
+                if scenario == "duplicate":
+                    if idx > 1:
+                        context = json.loads(frame["messages"][-1]["content"])
+                        previous = context["results"][0]
+                        if previous["scores"][0] != previous["scores"][1] or previous["params"]["rate"] != 0.001:
+                            raise AssertionError("The advisor did not receive the measured experiment")
+                if scenario == "recipes":
+                    variants = ("class_balance", "l2", "standard") if task == "A" else ("huber", "l2", "standard")
+                    proposal["recipe"] = variants[(idx - 1) % len(variants)]
                 content = "malformed mock result" if scenario == "invalid_plan" else json.dumps(proposal)
                 reply.update(type="model_response", call_id=model_id, response={
                     "choices": [{"message": {"role": "assistant", "content": content}}]})
@@ -196,7 +213,7 @@ def run_round(task, idx, directory, train, validation, parent, history, prior_st
                 save_files(directory / "candidate", frame["files"])
                 candidate = directory / "candidate/checkpoint.npz"
                 measured = local_scores(task, validation, candidate)
-                if scenario == "reject_candidate":
+                if scenario in ("reject_candidate", "duplicate", "repeat_pairs"):
                     measured[metric] = parent_scores[metric]
                 reply.update(type="candidate_response", artifact_id=descriptor(candidate)["artifact_id"],
                              summary={"metrics": measured})
@@ -210,11 +227,13 @@ def run_round(task, idx, directory, train, validation, parent, history, prior_st
                 raise AssertionError(f"Unexpected protocol message {protocol}")
             send(child, reply)
     write_json(directory / "trace.json", trace)
+    write_json(directory / "requests.json", requests)
     write_json(directory / "decision.json", decision)
     return selected, final_state, {"id": f"{task}-{idx}", "round_index": idx, **decision}
 
 
 def run_task(task, args, destination):
+    started = time.monotonic()
     origin = package(task)
     destination.mkdir()
     reference = load(origin / "training.json")
@@ -229,7 +248,15 @@ def run_task(task, args, destination):
     (starting_parent / parent.name).write_bytes(parent.read_bytes())
     parent = starting_parent / parent.name
     prior, history = None, []
-    for idx, batch in enumerate(projection(train, destination, args.rounds), 1):
+    count = 1 if args.scenario == "duplicate" else args.rounds
+    if args.scenario == "repeat_pairs":
+        count = (args.rounds + 1) // 2
+    batches = list(projection(train, destination, count))
+    if args.scenario == "duplicate":
+        batches *= args.rounds
+    if args.scenario == "repeat_pairs":
+        batches = [batch for batch in batches for _ in range(2)][:args.rounds]
+    for idx, batch in enumerate(batches, 1):
         directory = destination / f"round-{idx:02d}"
         directory.mkdir()
         if args.scenario == "invalid_training":
@@ -263,17 +290,41 @@ def run_task(task, args, destination):
         if child.stdout.readline():
             raise AssertionError("Predict emitted too many responses")
     records = load(prior / "rounds.json")
-    if args.scenario == "normal" and args.rounds >= 3 and sum(r["candidate_artifact"] is not None for r in records) < 3:
+    if args.scenario in ("normal", "recipes", "fixed") and args.rounds >= 3 and sum(
+        r["candidate_artifact"] is not None for r in records
+    ) < 3:
         raise AssertionError("Expected at least three measured trials")
+    if args.scenario == "recipes" and any(
+        not r["local_train_receipt"] or r["local_train_receipt"]["recipe"] != r["configuration"]["recipe"]
+        or not r["local_train_receipt"]["stability"] for r in records
+    ):
+        raise AssertionError("Missing recipe or stability evidence")
     expected_keeps = {"invalid_plan": "invalid_suggestion", "reject_candidate": "measured_keep",
                       "invalid_training": "training_failed", "time_budget": "time_keep"}
     if args.scenario in expected_keeps and {r["decision"] for r in records} != {expected_keeps[args.scenario]}:
         raise AssertionError(f"Expected the parent to be kept after {args.scenario}")
+    if args.scenario == "duplicate" and [r["decision"] for r in records] != (
+        ["measured_keep"] + ["duplicate_keep"] * (args.rounds - 1)
+    ):
+        raise AssertionError("An identical measured experiment was repeated")
+    traces = [load(directory / "trace.json") for directory in sorted(destination.glob("round-*"))]
+    requests = [item for directory in sorted(destination.glob("round-*"))
+                for item in load(directory / "requests.json")]
+    if any(trace.count("model_request") != 1 or trace.count("candidate_request") > 1 for trace in traces):
+        raise AssertionError("Expected one model call and at most one candidate per round")
     return {"rounds": len(records), "model_calls": sum(len(item["model_call_ids"]) for item in records),
+            "prompt_bytes": sum(item["prompt_bytes"] for item in requests),
+            "max_output_tokens_per_call": max(item["output_token_limit"] for item in requests),
+            "training_attempts": sum(item["epochs_attempted"] > 0 for item in records),
+            "candidate_submissions": sum(trace.count("candidate_request") for trace in traces),
+            "duplicates_skipped": sum(item["decision"] == "duplicate_keep" for item in records),
             "trials": sum(item["candidate_artifact"] is not None for item in records),
+            "epochs_attempted": sum(item["epochs_attempted"] for item in records),
+            "round_seconds": round(sum(item["elapsed_seconds"] for item in records), 2),
             "statuses": dict(Counter(item["decision"] for item in records)), "predictions": predictions,
             "metric": metric, "original_public": reference["validation_after"][metric],
-            "selected_public": local_scores(task, validation, parent)[metric], "selected_sha256": sha256(parent)}
+            "selected_public": local_scores(task, validation, parent)[metric],
+            "wall_seconds": round(time.monotonic() - started, 2), "selected_sha256": sha256(parent)}
 
 
 def main():
@@ -283,7 +334,8 @@ def main():
     parser.add_argument("--rounds", choices=range(1, 11), default=10, type=int)
     parser.add_argument("--image", help="Official-entry image to use instead of the host Python")
     parser.add_argument("--scenario", choices=("normal", "invalid_plan", "reject_candidate", "invalid_training",
-                                               "time_budget", "missing_call", "wrong_parent"), default="normal")
+                                               "time_budget", "missing_call", "wrong_parent", "duplicate",
+                                               "recipes", "fixed", "repeat_pairs"), default="normal")
     args = parser.parse_args()
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,47}", args.name):
         parser.error("Invalid run name")
@@ -297,7 +349,7 @@ def main():
             raise AssertionError("Unexpected official describe contract")
     tasks = CONTRACTS if args.task == "all" else (args.task,)
     summary = {task: run_task(task, args, output / task) for task in tasks}
-    write_json(output / "summary.json", {"mode": "mock_host", "describe": spec, "tasks": summary})
+    write_json(output / "summary.json", {"mode": "mock_host", "scenario": args.scenario, "describe": spec, "tasks": summary})
     print(output / "summary.json", flush=True)
 
 

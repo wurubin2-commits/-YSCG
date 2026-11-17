@@ -24,6 +24,7 @@ def main():
     paths = [Path(name) for name in (
         "stage1_local/common.py", "stage2_local/planner.py", "stage2_local/requirements-win-py312.lock.txt",
         "stage2_official/Dockerfile", "stage2_official/contest_submission.py", "stage2_official/trainer.py",
+        "stage2_official/policy.py", "stage2_official/continuation.py", "stage2_official/drift.py",
         "stage2_official/rehearse.py", "stage2_official/build_context.py", "stage2_official/verify_linux.sh",
         "stage2_official/sdk/pyproject.toml", "stage2_official/sdk/README.md", "stage2_official/sdk/template/harness.py",
     )]

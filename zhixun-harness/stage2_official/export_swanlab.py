@@ -25,17 +25,23 @@ def main():
         rows = []
         for item in state:
             parent, candidate = item["parent_public_score"], item["candidate_public_score"]
-            if parent is None or candidate is None:
-                raise ValueError("This export requires measured candidate and parent scores")
+            if parent is None:
+                raise ValueError("This export requires a measured parent score")
             accepted = item["decision"] == "adopted"
             evidence = {k: item[k] for k in ("hypothesis", "reason", "configuration", "seed", "model",
                                              "model_call_ids", "history_ids", "usage", "elapsed_seconds",
                                              "parent_sha256", "candidate_sha256", "selected_artifact")}
+            receipt = item["local_train_receipt"] or {}
+            evidence.update(stability=receipt.get("stability"), experiment_key=item.get("experiment_key"),
+                            batch_shift=item.get("batch_shift"))
+            evidence.update({key: item[key] for key in ("prompt_bytes", "output_token_limit", "feedback_rounds",
+                                                        "summary_seconds", "model_seconds") if key in item})
             rows.append({"round": item["round"], "status": "accepted" if accepted else item["decision"],
                          "parent": {"scores": {metric: parent}},
-                         "candidate": {"scores": {metric: candidate}},
+                         "candidate": {"scores": {metric: candidate}} if candidate is not None else None,
                          "selected": {"scores": {metric: candidate if accepted else parent}},
-                         "gain": (candidate - parent) * (1 if task == "A" else -1), "plan": evidence,
+                         "gain": ((candidate - parent) * (1 if task == "A" else -1)
+                                  if candidate is not None else None), "plan": evidence,
                          "batch": item["batch"], "epochs_reserved": item["epochs_attempted"], "runtime": None})
         folder = output / task
         folder.mkdir()

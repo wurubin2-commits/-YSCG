@@ -34,6 +34,23 @@ printf '%s\n' "$base" > "$build/base-image.txt"
 docker build "${build_options[@]}" -t "$image" "$build/context" 2>&1 | tee "$build/build.log"
 image_id=$(docker image inspect --format '{{.Id}}' "$image")
 [[ $(docker image inspect --format '{{.Os}}/{{.Architecture}}' "$image_id") == linux/amd64 ]]
+docker run --rm --read-only --network none --cap-drop ALL --security-opt no-new-privileges \
+  --cpus 4 --memory 8g --memory-swap 8g --entrypoint python3 "$image_id" -c '
+import json, os
+from pathlib import Path
+
+cgroup = Path("/sys/fs/cgroup")
+quota, period = (cgroup / "cpu.max").read_text().split()
+resources = {"cpu": int(quota) / int(period), "memory": int((cgroup / "memory.max").read_text()),
+             "swap": int((cgroup / "memory.swap.max").read_text()), "uid": os.getuid(),
+             "interfaces": sorted(p.name for p in Path("/sys/class/net").iterdir()),
+             "gpu": any(Path("/dev").glob("nvidia*")) or Path("/dev/dri").exists(),
+             "read_only": bool(os.statvfs("/app").f_flag & os.ST_RDONLY)}
+print(json.dumps(resources))
+assert (resources["cpu"], resources["memory"], resources["swap"]) == (4, 8 * 1024**3, 0)
+assert resources["interfaces"] == ["lo"] and not resources["gpu"]
+assert resources["uid"] != 0 and resources["read_only"]
+' | tee "$build/resources.json"
 "$python" -B -m stage2_official.rehearse --name "$name" --image "$image_id" --rounds 10 | tee "$build/rehearsal.log"
 "$python" -B - "stage2_official/runs/$name/summary.json" <<'PY'
 import json
