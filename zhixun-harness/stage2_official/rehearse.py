@@ -343,10 +343,12 @@ def run_task(task, args, destination):
         not r["candidate_artifact"] or not (r["local_train_receipt"] or {}).get("group_mse") for r in records
     ):
         raise AssertionError("Missing measured C condition-loss candidate or group counts")
-    expected_keeps = {"invalid_plan": "invalid_suggestion", "reject_candidate": "measured_keep",
+    expected_keeps = {"reject_candidate": "measured_keep",
                       "invalid_training": "training_failed", "time_budget": "time_keep"}
     if args.scenario in expected_keeps and {r["decision"] for r in records} != {expected_keeps[args.scenario]}:
         raise AssertionError(f"Expected the parent to be kept after {args.scenario}")
+    if args.scenario == "invalid_plan" and not all(r.get("proposal_normalization") for r in records):
+        raise AssertionError("Expected every malformed proposal to be replaced by a rule plan")
     if args.scenario == "duplicate" and [r["decision"] for r in records] != (
         ["measured_keep"] + ["duplicate_keep"] * (args.rounds - 1)
     ):

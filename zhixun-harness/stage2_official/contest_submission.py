@@ -17,6 +17,7 @@ from pydantic import ValidationError
 from stage1_local.common import ROOT, sha256
 from stage2_official import admission
 from stage2_official.continuation import B_RESIDUAL_RECIPE, SENSOR_MASK_RECIPE
+from stage2_official.normalize import normalize_proposal, rule_plan
 from stage2_official.operating_conditions import C_GROUP_RECIPE
 from stage2_official.policy import (
     Experiment, OUTPUT_TOKEN_LIMIT, PROMPT, RECIPES, already_trained, c_half_rate, compact_score,
@@ -203,10 +204,24 @@ def train(rnd):
     key = proposed_rate = None
     trial = directory / "trial"
     reason = "The model returned a suggestion outside the accepted schema."
+    normalization = None
     try:
         proposal = Experiment.model_validate_json(reply.text or "")
     except ValidationError:
-        proposal = None
+        proposal, normalization = normalize_proposal(reply.text or "", recipes, task)
+    if proposal is None:
+        proposal, source = rule_plan(task, prior, remaining)
+        if proposal is not None:
+            normalization = {"source": source, "clamped": {}, "raw_action": None}
+        else:
+            reason = "The model returned an unusable suggestion and no rule plan was available."
+    elif proposal.action == "keep":
+        replacement, source = rule_plan(task, prior, remaining)
+        if replacement is not None:
+            normalization = {"source": source, "clamped": {}, "raw_action": "keep"}
+            proposal = replacement
+    if normalization is not None and normalization.get("source") == "model":
+        normalization = None
     if proposal is not None:
         if task == "C" and os.environ.get("ZHIXUN_C_HALF_RATE") == "1":
             proposed_rate = proposal.rate
@@ -305,6 +320,9 @@ def train(rnd):
               "elapsed_seconds": round(time.monotonic() - started, 4)}
     if admission_record is not None:
         record["admission"] = admission_record
+    if normalization is not None:
+        record["proposal_normalization"] = {key: normalization[key] for key in
+                                            ("source", "clamped", "raw_action") if key in normalization}
     if proposed_rate is not None and proposed_rate != config.get("rate"):
         record["proposed_learning_rate"] = proposed_rate
     for item in prior:
