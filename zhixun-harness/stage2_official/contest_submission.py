@@ -15,6 +15,7 @@ from contest_harness.errors import HarnessError
 from pydantic import ValidationError
 
 from stage1_local.common import ROOT, sha256
+from stage2_official import admission
 from stage2_official.continuation import B_RESIDUAL_RECIPE, SENSOR_MASK_RECIPE
 from stage2_official.operating_conditions import C_GROUP_RECIPE
 from stage2_official.policy import (
@@ -196,6 +197,7 @@ def train(rnd):
     hypothesis, change = "Check whether a bounded update is justified", "Parent checkpoint retained"
     status, spend, config = "invalid_suggestion", 0, {}
     report, candidate_id, candidate_score = None, None, None
+    admission_record = None
     # Only the host's same-round score is official decision evidence.
     parent_score = official_score(rnd.frame.get("current_validation"), metric)
     key = proposed_rate = None
@@ -264,12 +266,22 @@ def train(rnd):
                         candidate_id = submitted["artifact_id"]
                         better, parent_score, candidate_score, source = assess(rnd, report, submitted, metric, direction)
                         blocked = [row["slice"] for row in report.get("stability", []) if not row["passed"]]
+                        admitted, gate, gate_reason = admission.evaluate(
+                            prior, report.get("stability", []), direction, parent_score, candidate_score,
+                            model=model, path=path,
+                            load=lambda item: baseline(task, "model").Model.load(item))
                         if better and blocked:
                             status = "stability_keep"
                             reason = "Parent retained after degradation on public slices: " + ", ".join(blocked)
+                        elif better and not admitted:
+                            status = "measured_keep"
+                            reason = f"Admission gate '{gate}' kept the parent: {gate_reason}."
+                            admission_record = {"gate": gate, "reason": gate_reason, "direction": direction}
                         elif better:
                             selected = candidate_id
                             status, reason = "adopted", f"Candidate adopted based on {source}."
+                            if gate != "disabled":
+                                admission_record = {"gate": gate, "reason": gate_reason, "direction": direction}
                         else:
                             status, reason = "measured_keep", f"Parent retained based on {source}."
 
@@ -291,6 +303,8 @@ def train(rnd):
               "output_token_limit": token_limit, "feedback_rounds": [row["round"] for row in prompt["results"]],
               "summary_seconds": round(summary_seconds, 4), "model_seconds": round(model_seconds, 4),
               "elapsed_seconds": round(time.monotonic() - started, 4)}
+    if admission_record is not None:
+        record["admission"] = admission_record
     if proposed_rate is not None and proposed_rate != config.get("rate"):
         record["proposed_learning_rate"] = proposed_rate
     for item in prior:

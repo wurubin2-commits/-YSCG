@@ -67,9 +67,11 @@ def process(command, folder, *, image, mounts=(), variables=None):
     env = {name: value for name, value in os.environ.items() if name.upper() in {
         "PATH", "SYSTEMROOT", "WINDIR", "HOME", "USERPROFILE", "TEMP", "TMP", "TMPDIR",
         "SYSTEMDRIVE", "APPDATA", "LOCALAPPDATA",
-    }}
+    } or name.startswith("ZHIXUN_")}
     controlled = {"PYTHONUTF8": "1", "OPENBLAS_NUM_THREADS": "1", "OMP_NUM_THREADS": "1",
-                  "MKL_NUM_THREADS": "1", "BASELINE_CPU_THREADS": "1", **(variables or {})}
+                  "MKL_NUM_THREADS": "1", "BASELINE_CPU_THREADS": "1",
+                  **{name: value for name, value in os.environ.items() if name.startswith("ZHIXUN_")},
+                  **(variables or {})}
     if image:
         argv = ["docker", "run", "--rm", "-i", "--read-only", "--network", "none", "--cap-drop", "ALL",
                 "--security-opt", "no-new-privileges", "--cpus", "4", "--memory", "8g", "--memory-swap", "8g",
