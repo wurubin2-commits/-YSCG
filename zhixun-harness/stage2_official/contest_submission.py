@@ -140,15 +140,38 @@ def train(rnd):
     if c_group_mse_enabled:
         recipes += (C_GROUP_RECIPE,)
     rows = rnd.data.training_rows()
+    diagnose_on = os.environ.get("ZHIXUN_DIAGNOSE") == "1"
+    train_features, sample = None, None
     if research:
-        from stage2_official.drift import drift_score, histogram, sample_rows
+        from stage2_official.drift import sample_rows
         rows, sample = sample_rows(rows)
+    elif diagnose_on:
+        from stage2_official.diagnostics import collect_features
+        rows, train_features = collect_features(rows, baseline(task, "data").flatten)
     summary_started = time.monotonic()
     batch = summarize(rows, kind)
     current_distribution = shift = None
     if research:
+        from stage2_official.drift import drift_score, histogram
         current_distribution = histogram(sample, model, baseline(task, "data").flatten)
         shift = drift_score(prior[-1].get("feature_histogram") if prior else None, current_distribution)
+        if diagnose_on:
+            # sample is filled only while summarize consumed the stream.
+            flatten_inputs = baseline(task, "data").flatten
+            train_features = []
+            for inputs in sample:
+                try:
+                    train_features.append(flatten_inputs(inputs)[1])
+                except (TypeError, ValueError):
+                    train_features = None
+                    break
+    input_drift = None
+    if diagnose_on and train_features:
+        try:
+            from stage2_official.diagnostics import diagnose, validation_matrix
+            input_drift = diagnose(train_features, validation_matrix(task, rnd.data.validation_path, model))
+        except (ValueError, OSError, KeyError):
+            input_drift = None
     parent_sha = sha256(path)
     train_sha, validation_sha = sha256(rnd.data.train_path), sha256(rnd.data.validation_path)
     parent_score = official_score(rnd.frame.get("current_validation"), metric)
@@ -305,6 +328,7 @@ def train(rnd):
                     if type(usage.get(key)) is int}
     record = {"task": task, "round": rnd.round_index, "batch": batch, "decision": status,
               "batch_shift": shift, "feature_histogram": current_distribution,
+              "input_drift": input_drift,
               "reason": reason, "hypothesis": hypothesis, "configuration": config, "seed": seed,
               "parent_artifact": rnd.parent.artifact_id, "candidate_artifact": candidate_id, "selected_artifact": selected,
               "parent_sha256": parent_sha, "candidate_sha256": report["checkpoint_sha256"] if report else None,

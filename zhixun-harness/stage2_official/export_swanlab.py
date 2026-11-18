@@ -33,15 +33,20 @@ def main():
                                              "parent_sha256", "candidate_sha256", "selected_artifact")}
             receipt = item["local_train_receipt"] or {}
             evidence.update(stability=receipt.get("stability"), experiment_key=item.get("experiment_key"),
-                            batch_shift=item.get("batch_shift"))
+                            batch_shift=item.get("batch_shift"), input_drift=item.get("input_drift"))
             evidence.update({key: item[key] for key in ("prompt_bytes", "output_token_limit", "feedback_rounds",
                                                         "summary_seconds", "model_seconds") if key in item})
+            gain = ((candidate - parent) * (1 if task == "A" else -1)
+                    if candidate is not None else None)
+            seconds = item.get("elapsed_seconds")
             rows.append({"round": item["round"], "status": "accepted" if accepted else item["decision"],
                          "parent": {"scores": {metric: parent}},
                          "candidate": {"scores": {metric: candidate}} if candidate is not None else None,
                          "selected": {"scores": {metric: candidate if accepted else parent}},
-                         "gain": ((candidate - parent) * (1 if task == "A" else -1)
-                                  if candidate is not None else None), "plan": evidence,
+                         "gain": gain,
+                         "gain_per_second": (round(gain / seconds, 6)
+                                             if gain is not None and seconds else None),
+                         "plan": evidence,
                          "batch": item["batch"], "epochs_reserved": item["epochs_attempted"], "runtime": None})
         folder = output / task
         folder.mkdir()
