@@ -20,6 +20,7 @@ DIRECTORY = Path(__file__).parent
 CONTRACTS = {"A": ("classification", "macro_f1", "higher"),
              "B": ("regression", "rmse", "lower"), "C": ("regression", "rmse", "lower")}
 PREDICTION = ["python3", "/app/harness.py", "predict"]
+L2SP_TRIAL_STRENGTH = 1.0
 
 
 def load(path):
@@ -144,6 +145,16 @@ def run_round(task, idx, directory, train, validation, parent, history, prior_st
     variables = ({} if image else {"CONTEST_WORK": str(work), "ZHIXUN_TEST_PREVIOUS": str(parent.parent)})
     if scenario == "recipes":
         variables["ZHIXUN_RESEARCH_MODE"] = "1"
+    if scenario == "l2sp":
+        variables["ZHIXUN_ENABLE_L2SP"] = "1"
+    if scenario == "c_half_rate":
+        variables["ZHIXUN_C_HALF_RATE"] = "1"
+    if scenario == "sensor_mask":
+        variables["ZHIXUN_ENABLE_SENSOR_MASK"] = "1"
+    if scenario == "b_residual":
+        variables["ZHIXUN_ENABLE_B_RESIDUAL"] = "1"
+    if scenario == "c_group_mse":
+        variables["ZHIXUN_ENABLE_C_GROUP_MSE"] = "1"
     trace, model_ids = [], []
     requests = []
     candidate, final_state, decision = None, None, None
@@ -202,6 +213,14 @@ def run_round(task, idx, directory, train, validation, parent, history, prior_st
                 if scenario == "recipes":
                     variants = ("class_balance", "l2", "standard") if task == "A" else ("huber", "l2", "standard")
                     proposal["recipe"] = variants[(idx - 1) % len(variants)]
+                if scenario == "l2sp":
+                    proposal.update(recipe="l2sp", l2sp_strength=L2SP_TRIAL_STRENGTH)
+                if scenario == "sensor_mask":
+                    proposal["recipe"] = "sensor_mask_v1"
+                if scenario == "b_residual":
+                    proposal.update(recipe="b_residual_v1", residual_mean_weight=0.5)
+                if scenario == "c_group_mse":
+                    proposal["recipe"] = "c_group_mse_v1"
                 content = "malformed mock result" if scenario == "invalid_plan" else json.dumps(proposal)
                 reply.update(type="model_response", call_id=model_id, response={
                     "choices": [{"message": {"role": "assistant", "content": content}}]})
@@ -290,7 +309,7 @@ def run_task(task, args, destination):
         if child.stdout.readline():
             raise AssertionError("Predict emitted too many responses")
     records = load(prior / "rounds.json")
-    if args.scenario in ("normal", "recipes", "fixed") and args.rounds >= 3 and sum(
+    if args.scenario in ("normal", "recipes", "fixed", "l2sp", "c_half_rate") and args.rounds >= 3 and sum(
         r["candidate_artifact"] is not None for r in records
     ) < 3:
         raise AssertionError("Expected at least three measured trials")
@@ -299,6 +318,29 @@ def run_task(task, args, destination):
         or not r["local_train_receipt"]["stability"] for r in records
     ):
         raise AssertionError("Missing recipe or stability evidence")
+    if args.scenario == "l2sp" and any(
+        not r["candidate_artifact"] or not r["local_train_receipt"]
+        or r["local_train_receipt"].get("l2sp_strength") != L2SP_TRIAL_STRENGTH for r in records
+    ):
+        raise AssertionError("Missing measured L2-SP candidate or strength")
+    if args.scenario == "c_half_rate" and any(
+        not r["local_train_receipt"] or r["configuration"]["rate"] != r.get("proposed_learning_rate", 0) / 2
+        or r["local_train_receipt"]["learning_rate"] != r["configuration"]["rate"] for r in records
+    ):
+        raise AssertionError("Missing measured C trial or effective learning rate")
+    if args.scenario == "sensor_mask" and any(
+        not r["candidate_artifact"] or not (r["local_train_receipt"] or {}).get("sensor_mask") for r in records
+    ):
+        raise AssertionError("Missing measured A sensor masking candidate")
+    if args.scenario == "b_residual" and any(
+        not r["candidate_artifact"] or (r["local_train_receipt"] or {}).get("residual_mean_weight") != 0.5
+        for r in records
+    ):
+        raise AssertionError("Missing measured B residual-loss candidate or weight")
+    if args.scenario == "c_group_mse" and any(
+        not r["candidate_artifact"] or not (r["local_train_receipt"] or {}).get("group_mse") for r in records
+    ):
+        raise AssertionError("Missing measured C condition-loss candidate or group counts")
     expected_keeps = {"invalid_plan": "invalid_suggestion", "reject_candidate": "measured_keep",
                       "invalid_training": "training_failed", "time_budget": "time_keep"}
     if args.scenario in expected_keeps and {r["decision"] for r in records} != {expected_keeps[args.scenario]}:
@@ -335,8 +377,19 @@ def main():
     parser.add_argument("--image", help="Official-entry image to use instead of the host Python")
     parser.add_argument("--scenario", choices=("normal", "invalid_plan", "reject_candidate", "invalid_training",
                                                "time_budget", "missing_call", "wrong_parent", "duplicate",
-                                               "recipes", "fixed", "repeat_pairs"), default="normal")
+                                               "recipes", "fixed", "repeat_pairs", "l2sp", "c_half_rate",
+                                               "sensor_mask", "b_residual", "c_group_mse"), default="normal")
     args = parser.parse_args()
+    if args.scenario == "l2sp" and args.task != "B":
+        parser.error("The L2-SP trial requires --task B")
+    if args.scenario == "c_half_rate" and args.task != "C":
+        parser.error("The half-rate trial requires --task C")
+    if args.scenario == "sensor_mask" and args.task != "A":
+        parser.error("The sensor masking trial requires --task A")
+    if args.scenario == "b_residual" and args.task != "B":
+        parser.error("The residual-loss trial requires --task B")
+    if args.scenario == "c_group_mse" and args.task != "C":
+        parser.error("The condition-loss trial requires --task C")
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,47}", args.name):
         parser.error("Invalid run name")
     output = DIRECTORY / "runs" / args.name

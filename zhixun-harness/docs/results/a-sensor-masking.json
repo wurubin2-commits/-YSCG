@@ -1,0 +1,660 @@
+{
+  "standard": {
+    "final": {
+      "classes": [
+        "Ethanol",
+        "Ethylene",
+        "Ammonia",
+        "Acetaldehyde",
+        "Acetone",
+        "Toluene"
+      ],
+      "confusion": [
+        [
+          158,
+          5,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          21,
+          313,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          100,
+          0,
+          0,
+          0
+        ],
+        [
+          108,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          529,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          5
+        ]
+      ],
+      "per_class": [
+        {
+          "class": "Ethanol",
+          "support": 164,
+          "correct": 158,
+          "predicted": 288,
+          "precision": 0.5486111111111112,
+          "recall": 0.9634146341463414,
+          "f1": 0.6991150442477876
+        },
+        {
+          "class": "Ethylene",
+          "support": 334,
+          "correct": 313,
+          "predicted": 318,
+          "precision": 0.9842767295597484,
+          "recall": 0.937125748502994,
+          "f1": 0.9601226993865031
+        },
+        {
+          "class": "Ammonia",
+          "support": 100,
+          "correct": 100,
+          "predicted": 101,
+          "precision": 0.9900990099009901,
+          "recall": 1.0,
+          "f1": 0.9950248756218906
+        },
+        {
+          "class": "Acetaldehyde",
+          "support": 109,
+          "correct": 0,
+          "predicted": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "Acetone",
+          "support": 532,
+          "correct": 529,
+          "predicted": 529,
+          "precision": 1.0,
+          "recall": 0.9943609022556391,
+          "f1": 0.9971724787935909
+        },
+        {
+          "class": "Toluene",
+          "support": 5,
+          "correct": 5,
+          "predicted": 8,
+          "precision": 0.625,
+          "recall": 1.0,
+          "f1": 0.7692307692307693
+        }
+      ],
+      "acetaldehyde_predicted_ethanol": 108,
+      "acetaldehyde_ranked_second": 85,
+      "macro_f1": 0.7367776445467569,
+      "accuracy": 0.8882636655948553
+    },
+    "mean_selected_macro_f1": 0.7329277229280501,
+    "worst_selected_macro_f1": 0.7278380354342557,
+    "rounds_adopted": [
+      1,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "rounds": [
+      {
+        "round": 1,
+        "updates": 1,
+        "parent_score": 0.7140297220788709,
+        "candidate_score": 0.7278380354342557,
+        "selected_score": 0.7278380354342557
+      },
+      {
+        "round": 2,
+        "updates": 1,
+        "parent_score": 0.7278380354342557,
+        "candidate_score": 0.7243828051316258,
+        "selected_score": 0.7278380354342557
+      },
+      {
+        "round": 3,
+        "updates": 1,
+        "parent_score": 0.7278380354342557,
+        "candidate_score": 0.7283565080221117,
+        "selected_score": 0.7283565080221117
+      },
+      {
+        "round": 4,
+        "updates": 1,
+        "parent_score": 0.7283565080221117,
+        "candidate_score": 0.7316720659271089,
+        "selected_score": 0.7316720659271089
+      },
+      {
+        "round": 5,
+        "updates": 1,
+        "parent_score": 0.7316720659271089,
+        "candidate_score": 0.7332332692122039,
+        "selected_score": 0.7332332692122039
+      },
+      {
+        "round": 6,
+        "updates": 1,
+        "parent_score": 0.7332332692122039,
+        "candidate_score": 0.7342753078002814,
+        "selected_score": 0.7342753078002814
+      },
+      {
+        "round": 7,
+        "updates": 1,
+        "parent_score": 0.7342753078002814,
+        "candidate_score": 0.7357310738100128,
+        "selected_score": 0.7357310738100128
+      },
+      {
+        "round": 8,
+        "updates": 1,
+        "parent_score": 0.7357310738100128,
+        "candidate_score": 0.7367776445467569,
+        "selected_score": 0.7367776445467569
+      },
+      {
+        "round": 9,
+        "updates": 1,
+        "parent_score": 0.7367776445467569,
+        "candidate_score": 0.7256954242091961,
+        "selected_score": 0.7367776445467569
+      },
+      {
+        "round": 10,
+        "updates": 1,
+        "parent_score": 0.7367776445467569,
+        "candidate_score": 0.7256954242091961,
+        "selected_score": 0.7367776445467569
+      }
+    ],
+    "resources": {
+      "wall_seconds": 28.84,
+      "prompt_bytes": 9091,
+      "model_calls": 10,
+      "candidate_submissions": 10
+    }
+  },
+  "sensor_mask": {
+    "final": {
+      "classes": [
+        "Ethanol",
+        "Ethylene",
+        "Ammonia",
+        "Acetaldehyde",
+        "Acetone",
+        "Toluene"
+      ],
+      "confusion": [
+        [
+          157,
+          6,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          35,
+          299,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          100,
+          0,
+          0,
+          0
+        ],
+        [
+          108,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          2,
+          0,
+          0,
+          0,
+          528,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          5
+        ]
+      ],
+      "per_class": [
+        {
+          "class": "Ethanol",
+          "support": 164,
+          "correct": 157,
+          "predicted": 302,
+          "precision": 0.5198675496688742,
+          "recall": 0.9573170731707317,
+          "f1": 0.6738197424892703
+        },
+        {
+          "class": "Ethylene",
+          "support": 334,
+          "correct": 299,
+          "predicted": 305,
+          "precision": 0.980327868852459,
+          "recall": 0.8952095808383234,
+          "f1": 0.9358372456964006
+        },
+        {
+          "class": "Ammonia",
+          "support": 100,
+          "correct": 100,
+          "predicted": 101,
+          "precision": 0.9900990099009901,
+          "recall": 1.0,
+          "f1": 0.9950248756218906
+        },
+        {
+          "class": "Acetaldehyde",
+          "support": 109,
+          "correct": 0,
+          "predicted": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "Acetone",
+          "support": 532,
+          "correct": 528,
+          "predicted": 528,
+          "precision": 1.0,
+          "recall": 0.9924812030075187,
+          "f1": 0.9962264150943396
+        },
+        {
+          "class": "Toluene",
+          "support": 5,
+          "correct": 5,
+          "predicted": 8,
+          "precision": 0.625,
+          "recall": 1.0,
+          "f1": 0.7692307692307693
+        }
+      ],
+      "acetaldehyde_predicted_ethanol": 108,
+      "acetaldehyde_ranked_second": 70,
+      "macro_f1": 0.7283565080221117,
+      "accuracy": 0.8754019292604501
+    },
+    "mean_selected_macro_f1": 0.7283565080221117,
+    "worst_selected_macro_f1": 0.7283565080221117,
+    "rounds_adopted": [
+      1
+    ],
+    "rounds": [
+      {
+        "round": 1,
+        "updates": 1,
+        "parent_score": 0.7140297220788709,
+        "candidate_score": 0.7283565080221117,
+        "selected_score": 0.7283565080221117
+      },
+      {
+        "round": 2,
+        "updates": 1,
+        "parent_score": 0.7283565080221117,
+        "candidate_score": 0.7206367912786767,
+        "selected_score": 0.7283565080221117
+      },
+      {
+        "round": 3,
+        "updates": 1,
+        "parent_score": 0.7283565080221117,
+        "candidate_score": 0.7267611057103575,
+        "selected_score": 0.7283565080221117
+      },
+      {
+        "round": 4,
+        "updates": 1,
+        "parent_score": 0.7283565080221117,
+        "candidate_score": 0.7251003341170364,
+        "selected_score": 0.7283565080221117
+      },
+      {
+        "round": 5,
+        "updates": 1,
+        "parent_score": 0.7283565080221117,
+        "candidate_score": 0.7255263889583993,
+        "selected_score": 0.7283565080221117
+      },
+      {
+        "round": 6,
+        "updates": 1,
+        "parent_score": 0.7283565080221117,
+        "candidate_score": 0.7206367912786767,
+        "selected_score": 0.7283565080221117
+      },
+      {
+        "round": 7,
+        "updates": 1,
+        "parent_score": 0.7283565080221117,
+        "candidate_score": 0.7161363765390045,
+        "selected_score": 0.7283565080221117
+      },
+      {
+        "round": 8,
+        "updates": 1,
+        "parent_score": 0.7283565080221117,
+        "candidate_score": 0.7211493952230521,
+        "selected_score": 0.7283565080221117
+      },
+      {
+        "round": 9,
+        "updates": 1,
+        "parent_score": 0.7283565080221117,
+        "candidate_score": 0.7222552230982394,
+        "selected_score": 0.7283565080221117
+      },
+      {
+        "round": 10,
+        "updates": 1,
+        "parent_score": 0.7283565080221117,
+        "candidate_score": 0.7228386507027467,
+        "selected_score": 0.7283565080221117
+      }
+    ],
+    "resources": {
+      "wall_seconds": 29.89,
+      "prompt_bytes": 10663,
+      "model_calls": 10,
+      "candidate_submissions": 10
+    }
+  },
+  "same_parent_round_7": {
+    "standard": {
+      "classes": [
+        "Ethanol",
+        "Ethylene",
+        "Ammonia",
+        "Acetaldehyde",
+        "Acetone",
+        "Toluene"
+      ],
+      "confusion": [
+        [
+          158,
+          5,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          23,
+          311,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          100,
+          0,
+          0,
+          0
+        ],
+        [
+          108,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          529,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          5
+        ]
+      ],
+      "per_class": [
+        {
+          "class": "Ethanol",
+          "support": 164,
+          "correct": 158,
+          "predicted": 290,
+          "precision": 0.5448275862068965,
+          "recall": 0.9634146341463414,
+          "f1": 0.6960352422907489
+        },
+        {
+          "class": "Ethylene",
+          "support": 334,
+          "correct": 311,
+          "predicted": 316,
+          "precision": 0.9841772151898734,
+          "recall": 0.9311377245508982,
+          "f1": 0.9569230769230769
+        },
+        {
+          "class": "Ammonia",
+          "support": 100,
+          "correct": 100,
+          "predicted": 101,
+          "precision": 0.9900990099009901,
+          "recall": 1.0,
+          "f1": 0.9950248756218906
+        },
+        {
+          "class": "Acetaldehyde",
+          "support": 109,
+          "correct": 0,
+          "predicted": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "Acetone",
+          "support": 532,
+          "correct": 529,
+          "predicted": 529,
+          "precision": 1.0,
+          "recall": 0.9943609022556391,
+          "f1": 0.9971724787935909
+        },
+        {
+          "class": "Toluene",
+          "support": 5,
+          "correct": 5,
+          "predicted": 8,
+          "precision": 0.625,
+          "recall": 1.0,
+          "f1": 0.7692307692307693
+        }
+      ],
+      "acetaldehyde_predicted_ethanol": 108,
+      "acetaldehyde_ranked_second": 85,
+      "macro_f1": 0.7357310738100128,
+      "accuracy": 0.8866559485530546
+    },
+    "sensor_mask": {
+      "classes": [
+        "Ethanol",
+        "Ethylene",
+        "Ammonia",
+        "Acetaldehyde",
+        "Acetone",
+        "Toluene"
+      ],
+      "confusion": [
+        [
+          158,
+          5,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          23,
+          311,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          100,
+          0,
+          0,
+          0
+        ],
+        [
+          108,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          529,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          5
+        ]
+      ],
+      "per_class": [
+        {
+          "class": "Ethanol",
+          "support": 164,
+          "correct": 158,
+          "predicted": 290,
+          "precision": 0.5448275862068965,
+          "recall": 0.9634146341463414,
+          "f1": 0.6960352422907489
+        },
+        {
+          "class": "Ethylene",
+          "support": 334,
+          "correct": 311,
+          "predicted": 316,
+          "precision": 0.9841772151898734,
+          "recall": 0.9311377245508982,
+          "f1": 0.9569230769230769
+        },
+        {
+          "class": "Ammonia",
+          "support": 100,
+          "correct": 100,
+          "predicted": 101,
+          "precision": 0.9900990099009901,
+          "recall": 1.0,
+          "f1": 0.9950248756218906
+        },
+        {
+          "class": "Acetaldehyde",
+          "support": 109,
+          "correct": 0,
+          "predicted": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0
+        },
+        {
+          "class": "Acetone",
+          "support": 532,
+          "correct": 529,
+          "predicted": 529,
+          "precision": 1.0,
+          "recall": 0.9943609022556391,
+          "f1": 0.9971724787935909
+        },
+        {
+          "class": "Toluene",
+          "support": 5,
+          "correct": 5,
+          "predicted": 8,
+          "precision": 0.625,
+          "recall": 1.0,
+          "f1": 0.7692307692307693
+        }
+      ],
+      "acetaldehyde_predicted_ethanol": 108,
+      "acetaldehyde_ranked_second": 85,
+      "macro_f1": 0.7357310738100128,
+      "accuracy": 0.8866559485530546
+    }
+  }
+}

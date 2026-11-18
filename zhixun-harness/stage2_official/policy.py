@@ -8,6 +8,7 @@ from typing import Literal
 from pydantic import Field, ValidationError, model_validator
 
 from stage2_local.planner import Proposal
+from stage2_official.continuation import B_RESIDUAL_RECIPE, L2SP_MAX_STRENGTH, L2SP_RECIPE
 
 RECIPES = {"A": ("standard", "class_balance", "l2"), "B": ("standard", "huber", "l2"),
            "C": ("standard", "huber", "l2")}
@@ -22,17 +23,32 @@ PROMPT = (
 
 class Experiment(Proposal):
     reason: str = Field(min_length=1, max_length=100)
-    recipe: Literal["standard", "class_balance", "huber", "l2"] = "standard"
+    recipe: Literal["standard", "class_balance", "huber", "l2", "l2sp", "sensor_mask_v1", "b_residual_v1",
+                    "c_group_mse_v1"] = "standard"
+    l2sp_strength: float | None = Field(default=None, gt=0.0, le=L2SP_MAX_STRENGTH, allow_inf_nan=False)
+    residual_mean_weight: float | None = Field(default=None, gt=0.0, le=1.0, allow_inf_nan=False)
 
     @model_validator(mode="after")
     def check_keep(self):
         if self.action == "keep" and self.recipe != "standard":
             raise ValueError("Keep cannot select a training recipe")
+        if (self.recipe == L2SP_RECIPE) != (self.l2sp_strength is not None):
+            raise ValueError("L2-SP proposals must specify their strength")
+        if (self.recipe == B_RESIDUAL_RECIPE) != (self.residual_mean_weight is not None):
+            raise ValueError("Residual proposals must specify their mean weight")
         return self
 
 
 def effective_parameters(plan):
-    return plan.model_dump(include={"recipe", "rate", "batch", "epochs"})
+    return plan.model_dump(include={"recipe", "rate", "batch", "epochs", "l2sp_strength", "residual_mean_weight"},
+                           exclude_none=True)
+
+
+def c_half_rate(plan):
+    """Preserve the advisor's action and budget while taking a smaller standard update."""
+    if plan.action != "train" or plan.recipe != "standard":
+        return plan
+    return Experiment.model_validate({**plan.model_dump(), "rate": max(0.00005, plan.rate / 2)})
 
 
 def experiment_key(task, parent, train, seed, parameters):

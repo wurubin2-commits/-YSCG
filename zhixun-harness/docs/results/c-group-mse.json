@@ -1,0 +1,843 @@
+{
+  "full": {
+    "standard": {
+      "rows": 23049,
+      "rmse": 51.82810814714481,
+      "mae": 38.02262047615653,
+      "nasa_phm08_sum": 4370990546.539068,
+      "signed_p95": 68.83531076742374,
+      "mean_selected_rmse": 52.198341814924724,
+      "worst_selected_rmse": 52.86857256611151,
+      "adopted": [
+        3,
+        7,
+        10
+      ],
+      "per_subset": [
+        {
+          "group": "FD001",
+          "rows": 3210,
+          "bias": 1.8687059712122065,
+          "residual_variance": 1682.774203649824,
+          "rmse": 41.06417253101136,
+          "mae": 31.990844782441805,
+          "fraction_squared_error": 0.08742756520174441,
+          "overestimate_fraction": 0.5610591900311527,
+          "signed_error_p95": 58.8880989580785
+        },
+        {
+          "group": "FD002",
+          "rows": 7581,
+          "bias": 5.56266199574528,
+          "residual_variance": 1648.4259617938399,
+          "rmse": 40.98010700660442,
+          "mae": 31.892992095391914,
+          "fraction_squared_error": 0.2056316083058542,
+          "overestimate_fraction": 0.5933254188101833,
+          "signed_error_p95": 67.38361259502781
+        },
+        {
+          "group": "FD003",
+          "rows": 3555,
+          "bias": 10.588519217953912,
+          "residual_variance": 2605.9896284501883,
+          "rmse": 52.13546170965754,
+          "mae": 39.94047301737294,
+          "fraction_squared_error": 0.15607137354316267,
+          "overestimate_fraction": 0.6289732770745429,
+          "signed_error_p95": 83.31448234760357
+        },
+        {
+          "group": "FD004",
+          "rows": 8703,
+          "bias": -10.086663176347937,
+          "residual_variance": 3817.1441187390105,
+          "rmse": 62.60099753815512,
+          "mae": 44.803356653035365,
+          "fraction_squared_error": 0.5508694529492386,
+          "overestimate_fraction": 0.5170630816959669,
+          "signed_error_p95": 67.285470466686
+        }
+      ],
+      "per_condition": [
+        {
+          "group": "condition_1",
+          "rows": 9243,
+          "bias": 3.2992900951607713,
+          "residual_variance": 2411.4934013094467,
+          "rmse": 49.217666710658605,
+          "mae": 36.838911006826145,
+          "fraction_squared_error": 0.36163644765043973,
+          "overestimate_fraction": 0.5794655414908579,
+          "signed_error_p95": 70.10066229351396
+        },
+        {
+          "group": "condition_2",
+          "rows": 2445,
+          "bias": -2.3105987789469427,
+          "residual_variance": 2888.595637590492,
+          "rmse": 53.795301879511406,
+          "mae": 38.72380952713848,
+          "fraction_squared_error": 0.11428382324928714,
+          "overestimate_fraction": 0.5492842535787321,
+          "signed_error_p95": 68.91570021096506
+        },
+        {
+          "group": "condition_3",
+          "rows": 2423,
+          "bias": -7.4544892796543305,
+          "residual_variance": 2697.8122342243632,
+          "rmse": 52.472675219058964,
+          "mae": 36.88386939744251,
+          "fraction_squared_error": 0.1077548995701422,
+          "overestimate_fraction": 0.4973173751547668,
+          "signed_error_p95": 63.4846090186835
+        },
+        {
+          "group": "condition_4",
+          "rows": 2417,
+          "bias": -1.5805539842418521,
+          "residual_variance": 2809.632468790824,
+          "rmse": 53.0295259236581,
+          "mae": 38.97617452478427,
+          "fraction_squared_error": 0.1097815451484715,
+          "overestimate_fraction": 0.5647496896979727,
+          "signed_error_p95": 66.81324132914055
+        },
+        {
+          "group": "condition_5",
+          "rows": 2385,
+          "bias": -0.17471915630003138,
+          "residual_variance": 2815.376718031447,
+          "rmse": 53.06041127634637,
+          "mae": 39.06611546563886,
+          "fraction_squared_error": 0.10845430775523537,
+          "overestimate_fraction": 0.5651991614255765,
+          "signed_error_p95": 69.99210702333711
+        },
+        {
+          "group": "condition_6",
+          "rows": 4136,
+          "bias": -1.0927828069025494,
+          "residual_variance": 2964.0644574452676,
+          "rmse": 54.454188376178465,
+          "mae": 39.76158023767619,
+          "fraction_squared_error": 0.198088976626424,
+          "overestimate_fraction": 0.5846228239845261,
+          "signed_error_p95": 67.29525158503616
+        }
+      ],
+      "weighted_rounds": [],
+      "resources": {
+        "wall_seconds": 67.09,
+        "prompt_bytes": 9170,
+        "model_calls": 10,
+        "candidate_submissions": 10
+      }
+    },
+    "half_rate": {
+      "rows": 23049,
+      "rmse": 51.772542256754114,
+      "mae": 37.727164333865765,
+      "nasa_phm08_sum": 4904843747.183862,
+      "signed_p95": 66.83587756489233,
+      "mean_selected_rmse": 52.034924057611306,
+      "worst_selected_rmse": 52.660722229798026,
+      "adopted": [
+        1,
+        2,
+        3,
+        7
+      ],
+      "per_subset": [
+        {
+          "group": "FD001",
+          "rows": 3210,
+          "bias": -1.5991145246125642,
+          "residual_variance": 1685.1647562183919,
+          "rmse": 41.08189289067896,
+          "mae": 31.587702137282736,
+          "fraction_squared_error": 0.08769096592489203,
+          "overestimate_fraction": 0.5311526479750779,
+          "signed_error_p95": 55.3003645405595
+        },
+        {
+          "group": "FD002",
+          "rows": 7581,
+          "bias": 5.201782414171949,
+          "residual_variance": 1639.4080527087615,
+          "rmse": 40.82237858078765,
+          "mae": 31.710096368204802,
+          "fraction_squared_error": 0.2044899826962692,
+          "overestimate_fraction": 0.5887086136393616,
+          "signed_error_p95": 66.09474779312669
+        },
+        {
+          "group": "FD003",
+          "rows": 3555,
+          "bias": 6.763910122173809,
+          "residual_variance": 2602.0788447011028,
+          "rmse": 51.45706292475259,
+          "mae": 38.88690385250568,
+          "fraction_squared_error": 0.1523626516599576,
+          "overestimate_fraction": 0.5949367088607594,
+          "signed_error_p95": 78.82336228217149
+        },
+        {
+          "group": "FD004",
+          "rows": 8703,
+          "bias": -10.778787829141697,
+          "residual_variance": 3826.8657134601103,
+          "rmse": 62.79369379584038,
+          "mae": 44.75924429594119,
+          "fraction_squared_error": 0.5554563997188812,
+          "overestimate_fraction": 0.511203033436746,
+          "signed_error_p95": 66.38436570077079
+        }
+      ],
+      "per_condition": [
+        {
+          "group": "condition_1",
+          "rows": 9243,
+          "bias": -0.30034888783873415,
+          "residual_variance": 2411.247083403823,
+          "rmse": 49.10536928746437,
+          "mae": 36.231051015926546,
+          "fraction_squared_error": 0.36076121878502426,
+          "overestimate_fraction": 0.5474413069349778,
+          "signed_error_p95": 66.1227423811377
+        },
+        {
+          "group": "condition_2",
+          "rows": 2445,
+          "bias": -2.0649957498521436,
+          "residual_variance": 2893.8372713687027,
+          "rmse": 53.83401785874439,
+          "mae": 38.785509068598934,
+          "fraction_squared_error": 0.11469418020130237,
+          "overestimate_fraction": 0.5513292433537832,
+          "signed_error_p95": 69.61753884235145
+        },
+        {
+          "group": "condition_3",
+          "rows": 2423,
+          "bias": -0.6686526318480586,
+          "residual_variance": 2707.069146623285,
+          "rmse": 52.03379904413441,
+          "mae": 37.75622374850841,
+          "fraction_squared_error": 0.10618750446076337,
+          "overestimate_fraction": 0.5728435823359471,
+          "signed_error_p95": 69.85858490377235
+        },
+        {
+          "group": "condition_4",
+          "rows": 2417,
+          "bias": -3.9895133179159807,
+          "residual_variance": 2822.928255508827,
+          "rmse": 53.280807726822765,
+          "mae": 38.71911288796758,
+          "fraction_squared_error": 0.11106243220939287,
+          "overestimate_fraction": 0.5428216797683079,
+          "signed_error_p95": 63.750051465962365
+        },
+        {
+          "group": "condition_5",
+          "rows": 2385,
+          "bias": -1.0264162982079852,
+          "residual_variance": 2817.981747768964,
+          "rmse": 53.09458803104315,
+          "mae": 38.92803968155849,
+          "fraction_squared_error": 0.10882729229990983,
+          "overestimate_fraction": 0.5517819706498952,
+          "signed_error_p95": 69.96249480966029
+        },
+        {
+          "group": "condition_6",
+          "rows": 4136,
+          "bias": -3.366705480798443,
+          "residual_variance": 2953.221300620882,
+          "rmse": 54.44773646732543,
+          "mae": 39.15581138417988,
+          "fraction_squared_error": 0.19846737204360723,
+          "overestimate_fraction": 0.558027079303675,
+          "signed_error_p95": 65.59032161203315
+        }
+      ],
+      "weighted_rounds": [],
+      "resources": {
+        "wall_seconds": 68.27,
+        "prompt_bytes": 9150,
+        "model_calls": 10,
+        "candidate_submissions": 10
+      }
+    },
+    "group_mse": {
+      "rows": 23049,
+      "rmse": 51.83439802644839,
+      "mae": 38.015013358641276,
+      "nasa_phm08_sum": 4431860387.490084,
+      "signed_p95": 68.82016621021515,
+      "mean_selected_rmse": 52.19896308877021,
+      "worst_selected_rmse": 52.86857256611151,
+      "adopted": [
+        3,
+        7,
+        10
+      ],
+      "per_subset": [
+        {
+          "group": "FD001",
+          "rows": 3210,
+          "bias": 2.0718879423065317,
+          "residual_variance": 1682.7419936926524,
+          "rmse": 41.07352813355736,
+          "mae": 32.01795532050231,
+          "fraction_squared_error": 0.08744618048754423,
+          "overestimate_fraction": 0.5629283489096574,
+          "signed_error_p95": 59.13274348764066
+        },
+        {
+          "group": "FD002",
+          "rows": 7581,
+          "bias": 5.402580750103619,
+          "residual_variance": 1648.4158966296893,
+          "rmse": 40.95856168606363,
+          "mae": 31.851301200948456,
+          "fraction_squared_error": 0.2053655936943949,
+          "overestimate_fraction": 0.5918744228993537,
+          "signed_error_p95": 67.40374051913285
+        },
+        {
+          "group": "FD003",
+          "rows": 3555,
+          "bias": 10.850064712173989,
+          "residual_variance": 2605.9331330897544,
+          "rmse": 52.188667710031815,
+          "mae": 40.0144942583122,
+          "fraction_squared_error": 0.15635213609622645,
+          "overestimate_fraction": 0.6309423347398031,
+          "signed_error_p95": 83.65647992322072
+        },
+        {
+          "group": "FD004",
+          "rows": 8703,
+          "bias": -10.223290716580998,
+          "residual_variance": 3815.083068607607,
+          "rmse": 62.60669885629922,
+          "mae": 44.77929045522467,
+          "fraction_squared_error": 0.5508360897218343,
+          "overestimate_fraction": 0.5152246351832701,
+          "signed_error_p95": 67.1226006086869
+        }
+      ],
+      "per_condition": [
+        {
+          "group": "condition_1",
+          "rows": 9243,
+          "bias": 3.5274440178405353,
+          "residual_variance": 2411.431264854217,
+          "rmse": 49.232856164894756,
+          "mae": 36.88179269522454,
+          "fraction_squared_error": 0.361771882195452,
+          "overestimate_fraction": 0.5810883912149735,
+          "signed_error_p95": 70.41802222230191
+        },
+        {
+          "group": "condition_2",
+          "rows": 2445,
+          "bias": -2.3006712172737576,
+          "residual_variance": 2888.100394451441,
+          "rmse": 53.790273121647495,
+          "mae": 38.722623314390106,
+          "fraction_squared_error": 0.11423472903436337,
+          "overestimate_fraction": 0.5484662576687117,
+          "signed_error_p95": 68.94969122433601
+        },
+        {
+          "group": "condition_3",
+          "rows": 2423,
+          "bias": -7.4862647394169395,
+          "residual_variance": 2697.4993517798307,
+          "rmse": 52.474217588530735,
+          "mae": 36.88073083815613,
+          "fraction_squared_error": 0.10773508317787417,
+          "overestimate_fraction": 0.49690466364011554,
+          "signed_error_p95": 63.49434113886537
+        },
+        {
+          "group": "condition_4",
+          "rows": 2417,
+          "bias": -2.2377911968988227,
+          "residual_variance": 2807.8700813820265,
+          "rmse": 53.036570315424285,
+          "mae": 38.84893720380708,
+          "fraction_squared_error": 0.10978406514732299,
+          "overestimate_fraction": 0.5610260653702938,
+          "signed_error_p95": 66.16388262420577
+        },
+        {
+          "group": "condition_5",
+          "rows": 2385,
+          "bias": -0.3539977946124485,
+          "residual_variance": 2814.854291013592,
+          "rmse": 53.056381382941886,
+          "mae": 39.03279445057484,
+          "fraction_squared_error": 0.1084115190300479,
+          "overestimate_fraction": 0.5622641509433962,
+          "signed_error_p95": 69.82883374853634
+        },
+        {
+          "group": "condition_6",
+          "rows": 4136,
+          "bias": -1.3008637565980987,
+          "residual_variance": 2963.8930405011915,
+          "rmse": 54.457187652452475,
+          "mae": 39.71946620179005,
+          "fraction_squared_error": 0.1980627214149396,
+          "overestimate_fraction": 0.5822050290135397,
+          "signed_error_p95": 67.05584995633001
+        }
+      ],
+      "weighted_rounds": [
+        2,
+        3,
+        4,
+        5,
+        7,
+        8,
+        9,
+        10
+      ],
+      "resources": {
+        "wall_seconds": 64.44,
+        "prompt_bytes": 10620,
+        "model_calls": 10,
+        "candidate_submissions": 10
+      }
+    }
+  },
+  "matched_parents": [
+    {
+      "round": 1,
+      "grouping": {
+        "group_fraction": 0.25,
+        "min_group_rows": 128,
+        "recognized_and_other_counts": [
+          11308,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "merged_counts": [
+          11308,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "weighted": false
+      },
+      "old_rmse": 54.20710796370539,
+      "matched_group_rmse": 54.20710796370539
+    },
+    {
+      "round": 2,
+      "grouping": {
+        "group_fraction": 0.25,
+        "min_group_rows": 128,
+        "recognized_and_other_counts": [
+          4053,
+          1236,
+          1339,
+          1272,
+          1286,
+          2123,
+          0
+        ],
+        "merged_counts": [
+          4053,
+          1236,
+          1339,
+          1272,
+          1286,
+          2123,
+          0
+        ],
+        "weighted": true
+      },
+      "old_rmse": 53.28679533991372,
+      "matched_group_rmse": 53.30693660797978
+    },
+    {
+      "round": 3,
+      "grouping": {
+        "group_fraction": 0.25,
+        "min_group_rows": 128,
+        "recognized_and_other_counts": [
+          1718,
+          1683,
+          1686,
+          1712,
+          1661,
+          2849,
+          0
+        ],
+        "merged_counts": [
+          1718,
+          1683,
+          1686,
+          1712,
+          1661,
+          2849,
+          0
+        ],
+        "weighted": true
+      },
+      "old_rmse": 52.19025097969119,
+      "matched_group_rmse": 52.17951016737047
+    },
+    {
+      "round": 4,
+      "grouping": {
+        "group_fraction": 0.25,
+        "min_group_rows": 128,
+        "recognized_and_other_counts": [
+          1704,
+          1716,
+          1708,
+          1678,
+          1678,
+          2825,
+          0
+        ],
+        "merged_counts": [
+          1704,
+          1716,
+          1708,
+          1678,
+          1678,
+          2825,
+          0
+        ],
+        "weighted": true
+      },
+      "old_rmse": 52.803866038886675,
+      "matched_group_rmse": 52.76928599453408
+    },
+    {
+      "round": 5,
+      "grouping": {
+        "group_fraction": 0.25,
+        "min_group_rows": 128,
+        "recognized_and_other_counts": [
+          5414,
+          1067,
+          1048,
+          1006,
+          1072,
+          1702,
+          0
+        ],
+        "merged_counts": [
+          5414,
+          1067,
+          1048,
+          1006,
+          1072,
+          1702,
+          0
+        ],
+        "weighted": true
+      },
+      "old_rmse": 54.97697731312406,
+      "matched_group_rmse": 54.76191477393983
+    },
+    {
+      "round": 6,
+      "grouping": {
+        "group_fraction": 0.25,
+        "min_group_rows": 128,
+        "recognized_and_other_counts": [
+          11309,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "merged_counts": [
+          11309,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "weighted": false
+      },
+      "old_rmse": 52.21490633091291,
+      "matched_group_rmse": 52.21490633091291
+    },
+    {
+      "round": 7,
+      "grouping": {
+        "group_fraction": 0.25,
+        "min_group_rows": 128,
+        "recognized_and_other_counts": [
+          3230,
+          1437,
+          1444,
+          1421,
+          1442,
+          2335,
+          0
+        ],
+        "merged_counts": [
+          3230,
+          1437,
+          1444,
+          1421,
+          1442,
+          2335,
+          0
+        ],
+        "weighted": true
+      },
+      "old_rmse": 51.88572031703821,
+      "matched_group_rmse": 51.89918659962241
+    },
+    {
+      "round": 8,
+      "grouping": {
+        "group_fraction": 0.25,
+        "min_group_rows": 128,
+        "recognized_and_other_counts": [
+          1693,
+          1722,
+          1684,
+          1700,
+          1674,
+          2836,
+          0
+        ],
+        "merged_counts": [
+          1693,
+          1722,
+          1684,
+          1700,
+          1674,
+          2836,
+          0
+        ],
+        "weighted": true
+      },
+      "old_rmse": 51.96918556180566,
+      "matched_group_rmse": 51.97154941610813
+    },
+    {
+      "round": 9,
+      "grouping": {
+        "group_fraction": 0.25,
+        "min_group_rows": 128,
+        "recognized_and_other_counts": [
+          1715,
+          1734,
+          1596,
+          1707,
+          1725,
+          2832,
+          0
+        ],
+        "merged_counts": [
+          1715,
+          1734,
+          1596,
+          1707,
+          1725,
+          2832,
+          0
+        ],
+        "weighted": true
+      },
+      "old_rmse": 52.270939624439606,
+      "matched_group_rmse": 52.28874462362032
+    },
+    {
+      "round": 10,
+      "grouping": {
+        "group_fraction": 0.25,
+        "min_group_rows": 128,
+        "recognized_and_other_counts": [
+          1696,
+          1664,
+          1714,
+          1677,
+          1676,
+          2882,
+          0
+        ],
+        "merged_counts": [
+          1696,
+          1664,
+          1714,
+          1677,
+          1676,
+          2882,
+          0
+        ],
+        "weighted": true
+      },
+      "old_rmse": 51.82810814714481,
+      "matched_group_rmse": 51.83873914695752
+    }
+  ],
+  "held_out": {
+    "standard": {
+      "folds": [
+        {
+          "fold": 1,
+          "adopted": [
+            3,
+            7,
+            8
+          ],
+          "rows": 7806,
+          "rmse": 52.16315168306586,
+          "mae": 37.68856582702501,
+          "nasa_phm08_sum": 1146998176.0942147,
+          "signed_p95": 59.63936258318665
+        },
+        {
+          "fold": 2,
+          "adopted": [
+            3,
+            6,
+            7
+          ],
+          "rows": 7595,
+          "rmse": 48.503823309229325,
+          "mae": 36.893556708978046,
+          "nasa_phm08_sum": 334583617.1981834,
+          "signed_p95": 76.83834539261252
+        },
+        {
+          "fold": 3,
+          "adopted": [
+            3,
+            7,
+            8
+          ],
+          "rows": 7648,
+          "rmse": 55.41006630237419,
+          "mae": 39.06192492642318,
+          "nasa_phm08_sum": 4119455892.36069,
+          "signed_p95": 64.48356296630938
+        }
+      ],
+      "pooled_rmse": 52.11051992659472,
+      "pooled_mae": 37.88229901027073,
+      "nasa_phm08_sum": 5601037685.653089
+    },
+    "half_rate": {
+      "folds": [
+        {
+          "fold": 1,
+          "adopted": [
+            1,
+            2,
+            3,
+            7
+          ],
+          "rows": 7806,
+          "rmse": 51.80527722557347,
+          "mae": 37.71332378137843,
+          "nasa_phm08_sum": 1024228385.2363511,
+          "signed_p95": 62.51008020167806
+        },
+        {
+          "fold": 2,
+          "adopted": [
+            3,
+            4,
+            6,
+            7
+          ],
+          "rows": 7595,
+          "rmse": 48.20353394992714,
+          "mae": 36.25346082483607,
+          "nasa_phm08_sum": 399686116.6725399,
+          "signed_p95": 72.55470236221309
+        },
+        {
+          "fold": 3,
+          "adopted": [
+            1,
+            3,
+            7
+          ],
+          "rows": 7648,
+          "rmse": 54.98867388512152,
+          "mae": 39.34682749265323,
+          "nasa_phm08_sum": 2996342298.487319,
+          "signed_p95": 68.04921621684848
+        }
+      ],
+      "pooled_rmse": 51.74842578194207,
+      "pooled_mae": 37.77429723918096,
+      "nasa_phm08_sum": 4420256800.39621
+    },
+    "group_mse": {
+      "folds": [
+        {
+          "fold": 1,
+          "adopted": [
+            3,
+            7,
+            8
+          ],
+          "rows": 7806,
+          "rmse": 52.161208037966496,
+          "mae": 37.69240647440801,
+          "nasa_phm08_sum": 1134185626.7554853,
+          "signed_p95": 59.70194284245653
+        },
+        {
+          "fold": 2,
+          "adopted": [
+            3,
+            6,
+            7
+          ],
+          "rows": 7595,
+          "rmse": 48.485016147903416,
+          "mae": 36.85534736656014,
+          "nasa_phm08_sum": 340813471.3965881,
+          "signed_p95": 76.37192154334699
+        },
+        {
+          "fold": 3,
+          "adopted": [
+            3,
+            7,
+            8
+          ],
+          "rows": 7648,
+          "rmse": 55.40287909980513,
+          "mae": 39.065264544038286,
+          "nasa_phm08_sum": 4078094041.623411,
+          "signed_p95": 64.69365874577157
+        }
+      ],
+      "pooled_rmse": 52.10155738702397,
+      "pooled_mae": 37.87211729016695,
+      "nasa_phm08_sum": 5553093139.775484
+    }
+  }
+}

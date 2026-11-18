@@ -1,6 +1,6 @@
 # 智训引擎 · 参赛 Harness 源码交接
 
-本目录保留 `hxx`（`49b32ac`）的官方入口和构建方式，并吸收 `ZMC`（`1eb762a`）的实验记忆、受控续训和准入检查设计。整合改动集中在 `zhixun-harness/`；所有下列命令均从该目录运行。
+本目录保留 `hxx`（`49b32ac`）的官方入口和构建方式，并吸收 `ZMC`（`1eb762a`）的实验记忆、受控续训和准入检查设计。整合改动集中在 `zhixun-harness/`。下列命令均从该目录运行。
 
 | 路径 | 用途 |
 | --- | --- |
@@ -11,6 +11,7 @@
 | `stage2_official/build_context.py`、`Dockerfile` | 按清单收集镜像所需源码和依赖。支持从已校验的 Linux wheels 离线安装。 |
 | `stage2_official/stage_linux_workspace.py` | 为 WSL 2 在 Ubuntu 自己的磁盘上准备验收目录，供 SDK 使用标准 Linux 文件权限。 |
 | `stage2_official/export_swanlab.py` | 将本地模拟实验记录导出到 SwanLab 离线文件并回读核验。 |
+| `main.py`、`round_review/` | 本地十轮复盘入口及分析模块，读取已有回执，验证同条件复跑并导出图表。 |
 | `stage1_local/`、`stage2_local/`、`run_initial_models.py` | 公开起点验证、早期训练与评估工具、策略约束和本地故障测试。 |
 
 ## 一轮怎样作出决定
@@ -35,6 +36,52 @@ c-发动机寿命预测/cpu工业模型/
 ```
 
 赛方 SDK、原始训练包、数据、检查点、实验记录和镜像归档在本目录的 `.gitignore` 中保持为本地输入或输出。调用真实模型所需的密钥由平台设置。
+
+## 十轮回执复盘
+
+从 `zhixun-harness/` 运行以下命令。绘图使用本机的 Matplotlib，属于本地分析依赖。两份回执目录都需要 `summary.json` 及三个任务的 `rounds.json`，来自已有的同条件十轮正常分批复跑。
+
+```bash
+python -B main.py review-rounds --reference stage2_official/runs/rerun-nov17-verify01-hxx-normal --current stage2_official/runs/rerun-nov17-verify01-compact-normal --output evidence/phase1-round-review
+```
+
+输出 `report.md`、`rounds.csv` 与 `rounds.png`，都存放在本地证据目录。入口检查两次复跑的同轮输入与输出是否一致，供核验当前性能基准。后续候选策略可能产生不同结果，需要按它自己的对照计划评估。正式平台继续从官方 SDK 入口启动。
+
+## B 轴承任务的 L2-SP 对照
+
+L2-SP 参考 Transfer Learning Library 的起点正则化方法。用 NumPy 对两层权重偏离当轮父模型的幅度加惩罚，继续使用赛方检查点的 Adam 状态、标准化和预测接口。B 支持实验开关 `ZHIXUN_ENABLE_L2SP=1`，并记录建议的强度，供验证与训练去重。正式默认策略为标准续训。 [参考实现](https://github.com/thuml/Transfer-Learning-Library/blob/master/tllib/regularization/delta.py) · [原论文](https://arxiv.org/abs/1802.01483)
+
+本地对照使用官方 SDK 模拟宿主、同一公开验证投影和相同训练预算。第二条训练命令采用预先设定的强度 `1.0`。每次使用新的演练名称。
+
+```bash
+python -B -m unittest stage2_official.test_policy stage2_official.test_l2sp -v
+python -B -m stage2_official.rehearse --name phase2-b-standard --task B --rounds 10
+python -B -m stage2_official.rehearse --name phase2-b-l2sp-strength1 --task B --rounds 10 --scenario l2sp
+```
+
+本机 Windows CPU 的单次配对回放如下。低剩余寿命切片为公开验证集真实寿命最低四分位，共 420 条。
+
+| B 公开验证 | 标准续训 | L2-SP |
+| --- | ---: | ---: |
+| 最终 RMSE（分钟） | 570.76 | 572.26 |
+| 最终 MAE（分钟） | 463.95 | 466.51 |
+| 低剩余寿命 MAE（分钟） | 435.95 | 424.92 |
+| 最差候选相对当轮父模型的 RMSE 增量（分钟） | 123.49 | 117.14 |
+| 采用候选 | 3/10 | 3/10 |
+| 墙钟时间（秒） | 26.17 | 26.23 |
+
+两组从同一检查点出发，每轮从各自上轮选中的模型续训。L2-SP 降低了低寿命子集误差和最差候选退步幅度，最终整体 RMSE 与 MAE 均上升，因此保留为 B 的实验选项。本次只测了一个强度和一个公开批次顺序。
+
+## C 发动机任务的学习率对照
+
+实验开关 `ZHIXUN_C_HALF_RATE=1` 会将 C 的标准续训建议学习率减半，最低保留 `0.00005`。保持大模型给出的训练或保留动作、训练轮数和批大小，按实际生效学习率去重，并在回执中保留发生调整的原建议值。可在本地执行两次十轮演练，分别比较标准流程和开启开关的结果。
+
+```bash
+python -B -m stage2_official.rehearse --name c-reference --task C --rounds 10
+python -B -m stage2_official.rehearse --name c-half-rate --task C --rounds 10 --scenario c_half_rate
+```
+
+官方 SDK 本地模拟宿主的十轮对照中，正常批次顺序的 RMSE 从 51.8281 降至 51.7725 循环，MAE 从 38.02 降至 37.73 循环，两组均训练和登记十个候选。逐轮核对了数据摘要、随机种子和训练预算。将整台发动机保留到各折结束才评分时，三折 RMSE 均下降。更换公开训练批次顺序后，倒序回放的 RMSE 下降，轮转回放的 RMSE 上升。开关默认关闭，适用于本地试验。
 
 ## 运行和验收
 

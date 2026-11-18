@@ -1,7 +1,9 @@
 import unittest
 
+from pydantic import ValidationError
+
 from stage2_official.policy import (
-    Experiment, already_trained, effective_parameters, experiment_key, history_feedback,
+    Experiment, already_trained, c_half_rate, effective_parameters, experiment_key, history_feedback,
 )
 
 
@@ -45,6 +47,43 @@ class ExperimentHistoryTest(unittest.TestCase):
         self.assertEqual(results[0]["scope"], "same_batch")
         self.assertNotIn("hypothesis", results[0])
         self.assertNotIn("reason", results[0]["params"])
+
+    def test_l2sp_strength_changes_experiment_identity(self):
+        trial = {**self.configuration, "recipe": "l2sp", "l2sp_strength": 1.0}
+        record = self.record(1, "start", "batch1", "measured_keep")
+        record["configuration"] = trial
+        for strength, expected in ((1.0, True), (2.0, False)):
+            effective = effective_parameters(Experiment.model_validate({**trial, "l2sp_strength": strength}))
+            self.assertEqual(already_trained([record], experiment_key("B", "start", "batch1", 42, effective)), expected)
+        with self.assertRaises(ValidationError):
+            Experiment.model_validate({**self.configuration, "recipe": "l2sp"})
+        with self.assertRaises(ValidationError):
+            Experiment.model_validate({**trial, "l2sp_strength": 0.0})
+
+    def test_c_half_rate_preserves_budget_and_records_effective_rate(self):
+        plan = Experiment.model_validate(self.configuration)
+        candidate = c_half_rate(plan)
+        self.assertEqual(candidate.rate, 0.0005)
+        self.assertEqual((candidate.batch, candidate.epochs, candidate.reason), (plan.batch, plan.epochs, plan.reason))
+        self.assertEqual(effective_parameters(candidate)["rate"], 0.0005)
+        low = Experiment.model_validate({**self.configuration, "rate": 0.000075})
+        self.assertEqual(c_half_rate(low).rate, 0.00005)
+        keep = Experiment(action="keep", reason="No training")
+        self.assertIs(c_half_rate(keep), keep)
+
+    def test_b_residual_requires_weight_and_deduplicates_by_value(self):
+        trial = {**self.configuration, "recipe": "b_residual_v1", "residual_mean_weight": 0.5}
+        record = self.record(1, "start", "batch1", "measured_keep")
+        record["configuration"] = trial
+        for weight, expected in ((0.5, True), (1.0, False)):
+            plan = Experiment.model_validate({**trial, "residual_mean_weight": weight})
+            key = experiment_key("B", "start", "batch1", 42, effective_parameters(plan))
+            self.assertEqual(already_trained([record], key), expected)
+        for weight in (None, 0.0, 1.1):
+            with self.assertRaises(ValidationError):
+                Experiment.model_validate({**trial, "residual_mean_weight": weight})
+        with self.assertRaises(ValidationError):
+            Experiment.model_validate({**trial, "recipe": "standard"})
 
 
 if __name__ == "__main__":

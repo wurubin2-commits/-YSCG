@@ -1,0 +1,626 @@
+{
+  "replays": {
+    "standard": {
+      "macro_f1": 0.7367776445467569,
+      "accuracy": 0.8882636655948553,
+      "support": [
+        164,
+        334,
+        100,
+        109,
+        532,
+        5
+      ],
+      "confusion": [
+        [
+          158,
+          5,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          21,
+          313,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          100,
+          0,
+          0,
+          0
+        ],
+        [
+          108,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          529,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          5
+        ]
+      ],
+      "acetaldehyde_correct": 0,
+      "acetaldehyde_total": 109,
+      "ethanol_correct": 158,
+      "ethanol_predicted": 288,
+      "f1_per_class": [
+        0.6991150442477876,
+        0.9601226993865031,
+        0.9950248756218906,
+        0.0,
+        0.9971724787935909,
+        0.7692307692307693
+      ],
+      "mean_selected_macro_f1": 0.7329277229280501,
+      "worst_selected_macro_f1": 0.7278380354342557,
+      "total_attempted_updates": 10,
+      "rounds": [
+        {
+          "round": 1,
+          "batch_size": 128,
+          "rows": 44,
+          "updates": 1,
+          "adopted": true,
+          "candidate_macro_f1": 0.7278380354342557,
+          "selected_macro_f1": 0.7278380354342557
+        },
+        {
+          "round": 2,
+          "batch_size": 128,
+          "rows": 45,
+          "updates": 1,
+          "adopted": false,
+          "candidate_macro_f1": 0.7243828051316258,
+          "selected_macro_f1": 0.7278380354342557
+        },
+        {
+          "round": 3,
+          "batch_size": 128,
+          "rows": 44,
+          "updates": 1,
+          "adopted": true,
+          "candidate_macro_f1": 0.7283565080221117,
+          "selected_macro_f1": 0.7283565080221117
+        },
+        {
+          "round": 4,
+          "batch_size": 128,
+          "rows": 45,
+          "updates": 1,
+          "adopted": true,
+          "candidate_macro_f1": 0.7316720659271089,
+          "selected_macro_f1": 0.7316720659271089
+        },
+        {
+          "round": 5,
+          "batch_size": 128,
+          "rows": 44,
+          "updates": 1,
+          "adopted": true,
+          "candidate_macro_f1": 0.7332332692122039,
+          "selected_macro_f1": 0.7332332692122039
+        },
+        {
+          "round": 6,
+          "batch_size": 128,
+          "rows": 45,
+          "updates": 1,
+          "adopted": true,
+          "candidate_macro_f1": 0.7342753078002814,
+          "selected_macro_f1": 0.7342753078002814
+        },
+        {
+          "round": 7,
+          "batch_size": 128,
+          "rows": 44,
+          "updates": 1,
+          "adopted": true,
+          "candidate_macro_f1": 0.7357310738100128,
+          "selected_macro_f1": 0.7357310738100128
+        },
+        {
+          "round": 8,
+          "batch_size": 128,
+          "rows": 45,
+          "updates": 1,
+          "adopted": true,
+          "candidate_macro_f1": 0.7367776445467569,
+          "selected_macro_f1": 0.7367776445467569
+        },
+        {
+          "round": 9,
+          "batch_size": 128,
+          "rows": 44,
+          "updates": 1,
+          "adopted": false,
+          "candidate_macro_f1": 0.7256954242091961,
+          "selected_macro_f1": 0.7367776445467569
+        },
+        {
+          "round": 10,
+          "batch_size": 128,
+          "rows": 45,
+          "updates": 1,
+          "adopted": false,
+          "candidate_macro_f1": 0.7256954242091961,
+          "selected_macro_f1": 0.7367776445467569
+        }
+      ]
+    },
+    "batch_32": {
+      "macro_f1": 0.7367776445467569,
+      "accuracy": 0.8882636655948553,
+      "support": [
+        164,
+        334,
+        100,
+        109,
+        532,
+        5
+      ],
+      "confusion": [
+        [
+          158,
+          5,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          21,
+          313,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          100,
+          0,
+          0,
+          0
+        ],
+        [
+          108,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          529,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          5
+        ]
+      ],
+      "acetaldehyde_correct": 0,
+      "acetaldehyde_total": 109,
+      "ethanol_correct": 158,
+      "ethanol_predicted": 288,
+      "f1_per_class": [
+        0.6991150442477876,
+        0.9601226993865031,
+        0.9950248756218906,
+        0.0,
+        0.9971724787935909,
+        0.7692307692307693
+      ],
+      "mean_selected_macro_f1": 0.7324370255983766,
+      "worst_selected_macro_f1": 0.7140297220788709,
+      "total_attempted_updates": 20,
+      "rounds": [
+        {
+          "round": 1,
+          "batch_size": 32,
+          "rows": 44,
+          "updates": 2,
+          "adopted": false,
+          "candidate_macro_f1": 0.7064187662403864,
+          "selected_macro_f1": 0.7140297220788709
+        },
+        {
+          "round": 2,
+          "batch_size": 32,
+          "rows": 45,
+          "updates": 2,
+          "adopted": true,
+          "candidate_macro_f1": 0.7306323723022107,
+          "selected_macro_f1": 0.7306323723022107
+        },
+        {
+          "round": 3,
+          "batch_size": 32,
+          "rows": 44,
+          "updates": 2,
+          "adopted": false,
+          "candidate_macro_f1": 0.7268296482589388,
+          "selected_macro_f1": 0.7306323723022107
+        },
+        {
+          "round": 4,
+          "batch_size": 32,
+          "rows": 45,
+          "updates": 2,
+          "adopted": true,
+          "candidate_macro_f1": 0.7346857139150509,
+          "selected_macro_f1": 0.7346857139150509
+        },
+        {
+          "round": 5,
+          "batch_size": 32,
+          "rows": 44,
+          "updates": 2,
+          "adopted": false,
+          "candidate_macro_f1": 0.7278784927596275,
+          "selected_macro_f1": 0.7346857139150509
+        },
+        {
+          "round": 6,
+          "batch_size": 32,
+          "rows": 45,
+          "updates": 2,
+          "adopted": false,
+          "candidate_macro_f1": 0.7278784927596275,
+          "selected_macro_f1": 0.7346857139150509
+        },
+        {
+          "round": 7,
+          "batch_size": 32,
+          "rows": 44,
+          "updates": 2,
+          "adopted": false,
+          "candidate_macro_f1": 0.7345960795115775,
+          "selected_macro_f1": 0.7346857139150509
+        },
+        {
+          "round": 8,
+          "batch_size": 32,
+          "rows": 45,
+          "updates": 2,
+          "adopted": true,
+          "candidate_macro_f1": 0.7367776445467569,
+          "selected_macro_f1": 0.7367776445467569
+        },
+        {
+          "round": 9,
+          "batch_size": 32,
+          "rows": 44,
+          "updates": 2,
+          "adopted": false,
+          "candidate_macro_f1": 0.7220281366867636,
+          "selected_macro_f1": 0.7367776445467569
+        },
+        {
+          "round": 10,
+          "batch_size": 32,
+          "rows": 45,
+          "updates": 2,
+          "adopted": false,
+          "candidate_macro_f1": 0.7134138098597874,
+          "selected_macro_f1": 0.7367776445467569
+        }
+      ]
+    },
+    "batch_32_if_acetaldehyde_present": {
+      "macro_f1": 0.7366199672635484,
+      "accuracy": 0.887459807073955,
+      "support": [
+        164,
+        334,
+        100,
+        109,
+        532,
+        5
+      ],
+      "confusion": [
+        [
+          158,
+          5,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          21,
+          313,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          100,
+          0,
+          0,
+          0
+        ],
+        [
+          108,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          1,
+          528,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          5
+        ]
+      ],
+      "acetaldehyde_correct": 0,
+      "acetaldehyde_total": 109,
+      "ethanol_correct": 158,
+      "ethanol_predicted": 288,
+      "f1_per_class": [
+        0.6991150442477876,
+        0.9601226993865031,
+        0.9950248756218906,
+        0.0,
+        0.9962264150943396,
+        0.7692307692307693
+      ],
+      "mean_selected_macro_f1": 0.732969309088441,
+      "worst_selected_macro_f1": 0.7278380354342557,
+      "total_attempted_updates": 11,
+      "rounds": [
+        {
+          "round": 1,
+          "batch_size": 128,
+          "rows": 44,
+          "updates": 1,
+          "adopted": true,
+          "candidate_macro_f1": 0.7278380354342557,
+          "selected_macro_f1": 0.7278380354342557
+        },
+        {
+          "round": 2,
+          "batch_size": 128,
+          "rows": 45,
+          "updates": 1,
+          "adopted": false,
+          "candidate_macro_f1": 0.7243828051316258,
+          "selected_macro_f1": 0.7278380354342557
+        },
+        {
+          "round": 3,
+          "batch_size": 128,
+          "rows": 44,
+          "updates": 1,
+          "adopted": true,
+          "candidate_macro_f1": 0.7283565080221117,
+          "selected_macro_f1": 0.7283565080221117
+        },
+        {
+          "round": 4,
+          "batch_size": 128,
+          "rows": 45,
+          "updates": 1,
+          "adopted": true,
+          "candidate_macro_f1": 0.7316720659271089,
+          "selected_macro_f1": 0.7316720659271089
+        },
+        {
+          "round": 5,
+          "batch_size": 128,
+          "rows": 44,
+          "updates": 1,
+          "adopted": true,
+          "candidate_macro_f1": 0.7332332692122039,
+          "selected_macro_f1": 0.7332332692122039
+        },
+        {
+          "round": 6,
+          "batch_size": 128,
+          "rows": 45,
+          "updates": 1,
+          "adopted": true,
+          "candidate_macro_f1": 0.7342753078002814,
+          "selected_macro_f1": 0.7342753078002814
+        },
+        {
+          "round": 7,
+          "batch_size": 32,
+          "rows": 44,
+          "updates": 2,
+          "adopted": true,
+          "candidate_macro_f1": 0.7366199672635484,
+          "selected_macro_f1": 0.7366199672635484
+        },
+        {
+          "round": 8,
+          "batch_size": 128,
+          "rows": 45,
+          "updates": 1,
+          "adopted": false,
+          "candidate_macro_f1": 0.7171864100659057,
+          "selected_macro_f1": 0.7366199672635484
+        },
+        {
+          "round": 9,
+          "batch_size": 128,
+          "rows": 44,
+          "updates": 1,
+          "adopted": false,
+          "candidate_macro_f1": 0.7253797718575415,
+          "selected_macro_f1": 0.7366199672635484
+        },
+        {
+          "round": 10,
+          "batch_size": 128,
+          "rows": 45,
+          "updates": 1,
+          "adopted": false,
+          "candidate_macro_f1": 0.7253797718575415,
+          "selected_macro_f1": 0.7366199672635484
+        }
+      ]
+    }
+  },
+  "prior_adjustment": {
+    "macro_f1": 0.6739747698282669,
+    "accuracy": 0.8818327974276527,
+    "support": [
+      164,
+      334,
+      100,
+      109,
+      532,
+      5
+    ],
+    "confusion": [
+      [
+        158,
+        5,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        23,
+        311,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        100,
+        0,
+        0,
+        0
+      ],
+      [
+        108,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        4,
+        526,
+        2
+      ],
+      [
+        0,
+        0,
+        0,
+        3,
+        0,
+        2
+      ]
+    ],
+    "acetaldehyde_correct": 0,
+    "acetaldehyde_total": 109,
+    "ethanol_correct": 158,
+    "ethanol_predicted": 289,
+    "f1_per_class": [
+      0.6975717439293598,
+      0.9569230769230769,
+      0.9950248756218906,
+      0.0,
+      0.994328922495274,
+      0.4
+    ],
+    "tau": 1,
+    "class_counts": {
+      "Ethanol": 90,
+      "Ethylene": 98,
+      "Ammonia": 83,
+      "Acetaldehyde": 30,
+      "Acetone": 70,
+      "Toluene": 74
+    }
+  },
+  "acetaldehyde_minus_ethanol": {
+    "initial": {
+      "pairwise_auc": 0.14002013873349742,
+      "by_label": {
+        "Acetaldehyde": {
+          "p10": -4.239700840082803,
+          "median": -4.075941132630067,
+          "p90": -3.9159041058075386
+        },
+        "Ethanol": {
+          "p10": -4.059430399772577,
+          "median": -3.1511886109687914,
+          "p90": -2.534548175645291
+        }
+      }
+    },
+    "standard_final": {
+      "pairwise_auc": 0.10164466323562318,
+      "by_label": {
+        "Acetaldehyde": {
+          "p10": -4.40457587730319,
+          "median": -4.15435659284281,
+          "p90": -4.014047492838345
+        },
+        "Ethanol": {
+          "p10": -3.869155854706371,
+          "median": -3.1028622040545084,
+          "p90": -2.6028292608365744
+        }
+      }
+    }
+  }
+}

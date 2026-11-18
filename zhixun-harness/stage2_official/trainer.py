@@ -25,13 +25,17 @@ def train_candidate(args, output):
         if os.environ.get("ZHIXUN_RESEARCH_MODE") != "1":
             return
     from stage1_local.common import sha256
-    from stage2_official.continuation import fit, stability
+    from stage2_official.continuation import (
+        B_RESIDUAL_RECIPE, GAS_SENSOR_FEATURES, GAS_SENSORS, SENSOR_MASK_RECIPE, fit, stability,
+    )
+    from stage2_official.operating_conditions import C_GROUP_RECIPE
 
     model_type = baseline(args.task, "model").Model
     read_dataset = baseline(args.task, "data").read_dataset
     original = model_type.load(args.parent)
     meta = original.meta
     validation = read_dataset(args.validation, meta["task"], meta["classes"], meta["paths"])
+    condition_report = {}
     if args.recipe == "standard":
         candidate = model_type.load(output / "checkpoint.npz")
         report = json.loads((output / "training.json").read_text(encoding="utf-8"))
@@ -43,14 +47,28 @@ def train_candidate(args, output):
         candidate.meta.update(learning_rate=args.rate, batch_size=args.batch)
         candidate.validate()
         started = time.monotonic()
-        fit(candidate, train["x"], train["y"], args.epochs, args.recipe)
+        fit(candidate, train["x"], train["y"], args.epochs, args.recipe, l2sp_strength=args.l2sp_strength,
+            residual_mean_weight=args.residual_mean_weight, group_mse_report=condition_report)
         report = {"parent_checkpoint_sha256": sha256(Path(args.parent)), "initial_steps": meta["steps"],
                   "initial_epochs": meta["epochs"], "final_steps": candidate.meta["steps"],
                   "final_epochs": candidate.meta["epochs"], "training_seconds": time.monotonic() - started,
                   "train_sha256": train["sha256"], "validation_sha256": validation["sha256"],
+                  "train_rows": len(train["y"]), "validation_rows": len(validation["y"]),
                   "validation_before": train_module.metrics(original, validation),
                   "validation_after": train_module.metrics(candidate, validation)}
-    report.update(recipe=args.recipe, stability=stability(original, candidate, validation))
+    report["recipe"] = args.recipe
+    if args.l2sp_strength is not None:
+        report["l2sp_strength"] = args.l2sp_strength
+    if args.recipe == B_RESIDUAL_RECIPE:
+        report["residual_mean_weight"] = args.residual_mean_weight
+    if args.recipe == C_GROUP_RECIPE:
+        report["group_mse"] = condition_report
+    if args.recipe == SENSOR_MASK_RECIPE:
+        report["sensor_mask"] = {"row_fraction": 0.25, "sensors_masked_per_row": 1,
+                                 "sensor_count": GAS_SENSORS, "features_per_sensor": GAS_SENSOR_FEATURES}
+    if (args.recipe not in ("standard", "l2sp", SENSOR_MASK_RECIPE, B_RESIDUAL_RECIPE, C_GROUP_RECIPE)
+            or os.environ.get("ZHIXUN_RESEARCH_MODE") == "1"):
+        report["stability"] = stability(original, candidate, validation)
     if args.recipe == "standard":
         (output / "training.json").write_text(json.dumps(report, ensure_ascii=False, allow_nan=False), encoding="utf-8")
     else:
@@ -76,10 +94,18 @@ def main():
     parser.add_argument("rate", type=float)
     parser.add_argument("batch", type=int)
     parser.add_argument("epochs", type=int)
-    parser.add_argument("--recipe", default="standard", choices=("standard", "class_balance", "huber", "l2"))
+    parser.add_argument("--recipe", default="standard",
+                        choices=("standard", "class_balance", "huber", "l2", "l2sp", "sensor_mask_v1",
+                                 "b_residual_v1", "c_group_mse_v1"))
+    parser.add_argument("--l2sp-strength", type=float)
+    parser.add_argument("--residual-mean-weight", type=float)
     args = parser.parse_args()
     if not 1 <= args.epochs <= 2:
         parser.error("Each candidate needs one or two epochs")
+    if (args.recipe == "l2sp") != (args.l2sp_strength is not None):
+        parser.error("L2-SP requires an explicit --l2sp-strength")
+    if (args.recipe == "b_residual_v1") != (args.residual_mean_weight is not None):
+        parser.error("The B residual recipe needs --residual-mean-weight")
     for key in ("BASELINE_CPU_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "OMP_NUM_THREADS"):
         os.environ[key] = "1"
     output = Path(args.output)

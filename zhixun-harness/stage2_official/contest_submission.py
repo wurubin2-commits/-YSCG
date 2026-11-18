@@ -15,8 +15,10 @@ from contest_harness.errors import HarnessError
 from pydantic import ValidationError
 
 from stage1_local.common import ROOT, sha256
+from stage2_official.continuation import B_RESIDUAL_RECIPE, SENSOR_MASK_RECIPE
+from stage2_official.operating_conditions import C_GROUP_RECIPE
 from stage2_official.policy import (
-    Experiment, OUTPUT_TOKEN_LIMIT, PROMPT, RECIPES, already_trained, compact_score,
+    Experiment, OUTPUT_TOKEN_LIMIT, PROMPT, RECIPES, already_trained, c_half_rate, compact_score,
     effective_parameters, experiment_key, history_feedback,
 )
 from stage2_official.trainer import baseline
@@ -123,6 +125,18 @@ def train(rnd):
     remaining = max(0, MAX_EPOCHS - sum(item["epochs_attempted"] for item in prior))
     research = os.environ.get("ZHIXUN_RESEARCH_MODE") == "1"
     recipes = RECIPES[task] if research else ("standard",)
+    l2sp_enabled = task == "B" and os.environ.get("ZHIXUN_ENABLE_L2SP") == "1"
+    sensor_mask_enabled = task == "A" and os.environ.get("ZHIXUN_ENABLE_SENSOR_MASK") == "1"
+    b_residual_enabled = task == "B" and os.environ.get("ZHIXUN_ENABLE_B_RESIDUAL") == "1"
+    c_group_mse_enabled = task == "C" and os.environ.get("ZHIXUN_ENABLE_C_GROUP_MSE") == "1"
+    if l2sp_enabled:
+        recipes += ("l2sp",)
+    if sensor_mask_enabled:
+        recipes += (SENSOR_MASK_RECIPE,)
+    if b_residual_enabled:
+        recipes += (B_RESIDUAL_RECIPE,)
+    if c_group_mse_enabled:
+        recipes += (C_GROUP_RECIPE,)
     rows = rnd.data.training_rows()
     if research:
         from stage2_official.drift import drift_score, histogram, sample_rows
@@ -157,6 +171,18 @@ def train(rnd):
     if research:
         prompt.update(allowed_recipes=recipes, batch_shift=shift)
         instructions += " Train may include an allowed recipe."
+    if l2sp_enabled:
+        prompt["allowed_recipes"] = recipes
+        instructions += " Recipe l2sp requires l2sp_strength in (0,10]."
+    if sensor_mask_enabled:
+        prompt["allowed_recipes"] = recipes
+        instructions += " Train may use recipe sensor_mask_v1."
+    if b_residual_enabled:
+        prompt["allowed_recipes"] = recipes
+        instructions += " Recipe b_residual_v1 requires residual_mean_weight in (0,1]."
+    if c_group_mse_enabled:
+        prompt["allowed_recipes"] = recipes
+        instructions += " Train may use recipe c_group_mse_v1."
     messages = [{"role": "system", "content": instructions},
                 {"role": "user", "content": json.dumps(prompt, ensure_ascii=False, separators=(",", ":"),
                                                        allow_nan=False)}]
@@ -172,7 +198,7 @@ def train(rnd):
     report, candidate_id, candidate_score = None, None, None
     # Only the host's same-round score is official decision evidence.
     parent_score = official_score(rnd.frame.get("current_validation"), metric)
-    key = None
+    key = proposed_rate = None
     trial = directory / "trial"
     reason = "The model returned a suggestion outside the accepted schema."
     try:
@@ -180,6 +206,9 @@ def train(rnd):
     except ValidationError:
         proposal = None
     if proposal is not None:
+        if task == "C" and os.environ.get("ZHIXUN_C_HALF_RATE") == "1":
+            proposed_rate = proposal.rate
+            proposal = c_half_rate(proposal)
         hypothesis = proposal.reason
         config = proposal.model_dump(exclude_none=True)
         if proposal.action == "train":
@@ -199,10 +228,15 @@ def train(rnd):
             else:
                 spend = proposal.epochs
                 try:
-                    subprocess.run([sys.executable, "-B", "-m", "stage2_official.trainer", task,
-                                    str(rnd.data.train_path), str(rnd.data.validation_path), str(path), str(trial),
-                                    f"{task}-{rnd.round_index}", str(proposal.rate), str(proposal.batch), str(spend),
-                                    "--recipe", proposal.recipe],
+                    command = [sys.executable, "-B", "-m", "stage2_official.trainer", task,
+                               str(rnd.data.train_path), str(rnd.data.validation_path), str(path), str(trial),
+                               f"{task}-{rnd.round_index}", str(proposal.rate), str(proposal.batch), str(spend),
+                               "--recipe", proposal.recipe]
+                    if proposal.l2sp_strength is not None:
+                        command.extend(["--l2sp-strength", str(proposal.l2sp_strength)])
+                    if proposal.residual_mean_weight is not None:
+                        command.extend(["--residual-mean-weight", str(proposal.residual_mean_weight)])
+                    subprocess.run(command,
                                    stdin=subprocess.DEVNULL, stdout=sys.stderr, stderr=sys.stderr,
                                    cwd=ROOT, timeout=available, check=True)
                     report = read_object(trial / "training.json")
@@ -257,6 +291,8 @@ def train(rnd):
               "output_token_limit": token_limit, "feedback_rounds": [row["round"] for row in prompt["results"]],
               "summary_seconds": round(summary_seconds, 4), "model_seconds": round(model_seconds, 4),
               "elapsed_seconds": round(time.monotonic() - started, 4)}
+    if proposed_rate is not None and proposed_rate != config.get("rate"):
+        record["proposed_learning_rate"] = proposed_rate
     for item in prior:
         item.pop("feature_histogram", None)
     evidence.write_text(json.dumps([*prior, record], ensure_ascii=False, separators=(",", ":"), allow_nan=False),

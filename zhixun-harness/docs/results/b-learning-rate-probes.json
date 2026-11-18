@@ -1,0 +1,583 @@
+{
+  "1.0": {
+    "holdouts": [
+      {
+        "bearing": "xjtu_Bearing1_4",
+        "rows": 122,
+        "rmse": 550.9137880958554,
+        "mae": 537.6259718641606,
+        "adopted": [
+          1,
+          3,
+          4
+        ],
+        "fit_and_monitor_seconds": 0.02647340000839904
+      },
+      {
+        "bearing": "xjtu_Bearing2_4",
+        "rows": 42,
+        "rmse": 353.6646085523133,
+        "mae": 247.68741843676867,
+        "adopted": [
+          1,
+          3,
+          4
+        ],
+        "fit_and_monitor_seconds": 0.01567560000694357
+      },
+      {
+        "bearing": "xjtu_Bearing3_4",
+        "rows": 1515,
+        "rmse": 703.3453394811872,
+        "mae": 593.0902534832526,
+        "adopted": [
+          2,
+          4,
+          8,
+          9
+        ],
+        "fit_and_monitor_seconds": 0.007870800007367507
+      }
+    ],
+    "holdout_pooled_rmse": 686.6997559784181,
+    "holdout_pooled_mae": 580.4198774085166,
+    "public_rmse": 570.7631851307431,
+    "public_mae": 463.9505977084003,
+    "adopted": [
+      1,
+      3,
+      4
+    ],
+    "seconds": 0.01472130001639016
+  },
+  "2.0": {
+    "holdouts": [
+      {
+        "bearing": "xjtu_Bearing1_4",
+        "rows": 122,
+        "rmse": 627.0284092679457,
+        "mae": 612.5928015988385,
+        "adopted": [
+          1,
+          3,
+          5
+        ],
+        "fit_and_monitor_seconds": 0.014113400015048683
+      },
+      {
+        "bearing": "xjtu_Bearing2_4",
+        "rows": 42,
+        "rmse": 378.5301238178862,
+        "mae": 283.0512178162825,
+        "adopted": [
+          1,
+          3,
+          4
+        ],
+        "fit_and_monitor_seconds": 0.015144399978453293
+      },
+      {
+        "bearing": "xjtu_Bearing3_4",
+        "rows": 1515,
+        "rmse": 726.6107488878595,
+        "mae": 613.4610123831193,
+        "adopted": [
+          2,
+          4,
+          8
+        ],
+        "fit_and_monitor_seconds": 0.008819300011964515
+      }
+    ],
+    "holdout_pooled_rmse": 713.1239209340321,
+    "holdout_pooled_mae": 605.1327615865205,
+    "public_rmse": 572.9153166109372,
+    "public_mae": 455.0786268812905,
+    "adopted": [
+      1,
+      3,
+      4
+    ],
+    "seconds": 0.01500569999916479
+  },
+  "0.5": {
+    "holdouts": [
+      {
+        "bearing": "xjtu_Bearing1_4",
+        "rows": 122,
+        "rmse": 447.03440623980543,
+        "mae": 429.68060575894924,
+        "adopted": [
+          1,
+          3,
+          4,
+          7,
+          8
+        ],
+        "fit_and_monitor_seconds": 0.01401889999397099
+      },
+      {
+        "bearing": "xjtu_Bearing2_4",
+        "rows": 42,
+        "rmse": 413.608946553069,
+        "mae": 314.4942987731849,
+        "adopted": [
+          1,
+          3,
+          4,
+          7
+        ],
+        "fit_and_monitor_seconds": 0.01512559998081997
+      },
+      {
+        "bearing": "xjtu_Bearing3_4",
+        "rows": 1515,
+        "rmse": 733.6799609432445,
+        "mae": 618.7190191015751,
+        "adopted": [
+          2,
+          4,
+          5,
+          6,
+          8,
+          9
+        ],
+        "fit_and_monitor_seconds": 0.008041299995966256
+      }
+    ],
+    "holdout_pooled_rmse": 710.2873831489582,
+    "holdout_pooled_mae": 597.3729055330267,
+    "public_rmse": 588.8373678463798,
+    "public_mae": 484.9358194738337,
+    "adopted": [
+      1,
+      3,
+      4,
+      8
+    ],
+    "seconds": 0.014359199994942173
+  },
+  "0.75": {
+    "holdouts": [
+      {
+        "bearing": "xjtu_Bearing1_4",
+        "rows": 122,
+        "rmse": 502.14455551568153,
+        "mae": 487.35959862126305,
+        "adopted": [
+          1,
+          3,
+          4
+        ],
+        "fit_and_monitor_seconds": 0.01389590001781471
+      },
+      {
+        "bearing": "xjtu_Bearing2_4",
+        "rows": 42,
+        "rmse": 349.0210712387727,
+        "mae": 244.41540407172496,
+        "adopted": [
+          1,
+          3,
+          4
+        ],
+        "fit_and_monitor_seconds": 0.014827499981038272
+      },
+      {
+        "bearing": "xjtu_Bearing3_4",
+        "rows": 1515,
+        "rmse": 748.3010530286031,
+        "mae": 632.3386698430792,
+        "adopted": [
+          2,
+          4,
+          5,
+          8,
+          9
+        ],
+        "fit_and_monitor_seconds": 0.007879399985540658
+      }
+    ],
+    "holdout_pooled_rmse": 725.6918296714222,
+    "holdout_pooled_mae": 612.1002994729431,
+    "public_rmse": 575.9495258222687,
+    "public_mae": 472.377036437789,
+    "adopted": [
+      1,
+      3,
+      4
+    ],
+    "seconds": 0.014980200008722022
+  },
+  "fixed": {
+    "holdouts": [
+      {
+        "bearing": "xjtu_Bearing1_4",
+        "rows": 122,
+        "rmse": 556.8316545608719,
+        "mae": 543.8939944773787,
+        "adopted": [
+          1,
+          3,
+          4
+        ],
+        "fit_and_monitor_seconds": 0.014179899997543544
+      },
+      {
+        "bearing": "xjtu_Bearing2_4",
+        "rows": 42,
+        "rmse": 356.32291095448704,
+        "mae": 254.30880263842616,
+        "adopted": [
+          1,
+          3,
+          4
+        ],
+        "fit_and_monitor_seconds": 0.014825299993390217
+      },
+      {
+        "bearing": "xjtu_Bearing3_4",
+        "rows": 1515,
+        "rmse": 702.2078450277556,
+        "mae": 593.4390270659288,
+        "adopted": [
+          2,
+          4,
+          8
+        ],
+        "fit_and_monitor_seconds": 0.007813100004568696
+      }
+    ],
+    "holdout_pooled_rmse": 686.0302195674363,
+    "holdout_pooled_mae": 581.3556658975201,
+    "public_rmse": 569.652353435691,
+    "public_mae": 461.7409096485114,
+    "adopted": [
+      1,
+      3,
+      4
+    ],
+    "seconds": 0.016944600007263944
+  },
+  "huber": {
+    "holdouts": [
+      {
+        "bearing": "xjtu_Bearing1_4",
+        "rows": 122,
+        "rmse": 539.0474008345565,
+        "mae": 525.7928833640591,
+        "adopted": [
+          1,
+          3,
+          4
+        ],
+        "fit_and_monitor_seconds": 0.013579799997387454
+      },
+      {
+        "bearing": "xjtu_Bearing2_4",
+        "rows": 42,
+        "rmse": 354.0901120536794,
+        "mae": 250.1646668753799,
+        "adopted": [
+          1,
+          3,
+          4
+        ],
+        "fit_and_monitor_seconds": 0.015038099983939901
+      },
+      {
+        "bearing": "xjtu_Bearing3_4",
+        "rows": 1515,
+        "rmse": 700.5074737789918,
+        "mae": 590.4001595941902,
+        "adopted": [
+          2,
+          4,
+          8,
+          9
+        ],
+        "fit_and_monitor_seconds": 0.007245199987664819
+      }
+    ],
+    "holdout_pooled_rmse": 683.3955487098373,
+    "holdout_pooled_mae": 577.194693010351,
+    "public_rmse": 571.8000811782468,
+    "public_mae": 465.41573352970113,
+    "adopted": [
+      1,
+      3,
+      4
+    ],
+    "seconds": 0.01421150000533089
+  },
+  "huber_fixed": {
+    "holdouts": [
+      {
+        "bearing": "xjtu_Bearing1_4",
+        "rows": 122,
+        "rmse": 545.1579356738516,
+        "mae": 532.2615557750058,
+        "adopted": [
+          1,
+          3,
+          4
+        ],
+        "fit_and_monitor_seconds": 0.013763099996140227
+      },
+      {
+        "bearing": "xjtu_Bearing2_4",
+        "rows": 42,
+        "rmse": 365.08856785257825,
+        "mae": 265.705312198443,
+        "adopted": [
+          1,
+          3,
+          5
+        ],
+        "fit_and_monitor_seconds": 0.014446399989537895
+      },
+      {
+        "bearing": "xjtu_Bearing3_4",
+        "rows": 1515,
+        "rmse": 700.2828733112754,
+        "mae": 591.5483574578108,
+        "adopted": [
+          2,
+          4,
+          8
+        ],
+        "fit_and_monitor_seconds": 0.007975899992743507
+      }
+    ],
+    "holdout_pooled_rmse": 683.6847564042548,
+    "holdout_pooled_mae": 579.0895142736562,
+    "public_rmse": 569.4551029748493,
+    "public_mae": 464.44031189080187,
+    "adopted": [
+      1,
+      3,
+      5
+    ],
+    "seconds": 0.01449160001357086
+  },
+  "l2": {
+    "holdouts": [
+      {
+        "bearing": "xjtu_Bearing1_4",
+        "rows": 122,
+        "rmse": 551.6766021122738,
+        "mae": 538.4196343395481,
+        "adopted": [
+          1,
+          3,
+          4
+        ],
+        "fit_and_monitor_seconds": 0.01302189999842085
+      },
+      {
+        "bearing": "xjtu_Bearing2_4",
+        "rows": 42,
+        "rmse": 353.56223642265456,
+        "mae": 247.54035929265467,
+        "adopted": [
+          1,
+          3,
+          4
+        ],
+        "fit_and_monitor_seconds": 0.013890299975173548
+      },
+      {
+        "bearing": "xjtu_Bearing3_4",
+        "rows": 1515,
+        "rmse": 702.9671338702414,
+        "mae": 592.7484979076394,
+        "adopted": [
+          2,
+          4,
+          8,
+          9
+        ],
+        "fit_and_monitor_seconds": 0.007049800013191998
+      }
+    ],
+    "holdout_pooled_rmse": 686.3934256455891,
+    "holdout_pooled_mae": 580.1654942285825,
+    "public_rmse": 570.5622115782174,
+    "public_mae": 463.7867736352291,
+    "adopted": [
+      1,
+      3,
+      4
+    ],
+    "seconds": 0.014575100009096786
+  },
+  "head_only": {
+    "holdouts": [
+      {
+        "bearing": "xjtu_Bearing1_4",
+        "rows": 122,
+        "rmse": 380.7408573062865,
+        "mae": 344.57193356415286,
+        "adopted": [
+          1,
+          3,
+          4,
+          5
+        ],
+        "fit_and_monitor_seconds": 0.011137599998619407
+      },
+      {
+        "bearing": "xjtu_Bearing2_4",
+        "rows": 42,
+        "rmse": 433.2755846066995,
+        "mae": 344.7357593945164,
+        "adopted": [
+          1,
+          3,
+          4,
+          5
+        ],
+        "fit_and_monitor_seconds": 0.012356100021861494
+      },
+      {
+        "bearing": "xjtu_Bearing3_4",
+        "rows": 1515,
+        "rmse": 718.8434914549964,
+        "mae": 606.8766340989783,
+        "adopted": [
+          2,
+          4,
+          5,
+          6,
+          8,
+          9,
+          10
+        ],
+        "fit_and_monitor_seconds": 0.0050755999982357025
+      }
+    ],
+    "holdout_pooled_rmse": 693.8962644266841,
+    "holdout_pooled_mae": 581.2595464260563,
+    "public_rmse": 591.8163306765264,
+    "public_mae": 494.62101633881974,
+    "adopted": [
+      1,
+      3,
+      4,
+      5
+    ],
+    "seconds": 0.012318599998252466
+  },
+  "head_only_fixed": {
+    "holdouts": [
+      {
+        "bearing": "xjtu_Bearing1_4",
+        "rows": 122,
+        "rmse": 398.56329552803163,
+        "mae": 366.24262833729466,
+        "adopted": [
+          1,
+          3,
+          4,
+          5
+        ],
+        "fit_and_monitor_seconds": 0.010769100015750155
+      },
+      {
+        "bearing": "xjtu_Bearing2_4",
+        "rows": 42,
+        "rmse": 440.990139127339,
+        "mae": 351.64108293395486,
+        "adopted": [
+          1,
+          3,
+          4,
+          5
+        ],
+        "fit_and_monitor_seconds": 0.012162300001364201
+      },
+      {
+        "bearing": "xjtu_Bearing3_4",
+        "rows": 1515,
+        "rmse": 738.4424930011548,
+        "mae": 624.2270024184759,
+        "adopted": [
+          2,
+          4,
+          5,
+          6,
+          8,
+          9
+        ],
+        "fit_and_monitor_seconds": 0.005036999995354563
+      }
+    ],
+    "holdout_pooled_rmse": 713.0508483141756,
+    "holdout_pooled_mae": 598.6625579537623,
+    "public_rmse": 583.7869757997471,
+    "public_mae": 487.78988799593185,
+    "adopted": [
+      1,
+      3,
+      4,
+      5
+    ],
+    "seconds": 0.012398799997754395
+  },
+  "head_only_double": {
+    "holdouts": [
+      {
+        "bearing": "xjtu_Bearing1_4",
+        "rows": 122,
+        "rmse": 483.70637924061305,
+        "mae": 459.79718653693465,
+        "adopted": [
+          1,
+          3,
+          4,
+          5
+        ],
+        "fit_and_monitor_seconds": 0.011131000006571412
+      },
+      {
+        "bearing": "xjtu_Bearing2_4",
+        "rows": 42,
+        "rmse": 472.1959163311423,
+        "mae": 368.20439709170887,
+        "adopted": [
+          1,
+          3,
+          4,
+          5
+        ],
+        "fit_and_monitor_seconds": 0.012336699990555644
+      },
+      {
+        "bearing": "xjtu_Bearing3_4",
+        "rows": 1515,
+        "rmse": 749.4548783002494,
+        "mae": 633.5975909540767,
+        "adopted": [
+          2,
+          4,
+          5,
+          6,
+          8,
+          9
+        ],
+        "fit_and_monitor_seconds": 0.004886199982138351
+      }
+    ],
+    "holdout_pooled_rmse": 727.5970819811142,
+    "holdout_pooled_mae": 614.3300725019559,
+    "public_rmse": 558.3702224133001,
+    "public_mae": 466.25344127825207,
+    "adopted": [
+      1,
+      3,
+      4,
+      5
+    ],
+    "seconds": 0.012246700003743172
+  }
+}
