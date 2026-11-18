@@ -183,7 +183,7 @@ cython_debug/
 # ---- ML / 赛题项目 ----
 # SwanLab 实验记录（本地日志，云端为准）
 swanlog/
-# 模型产物与注册表状态（仅仓库根目录；不误伤 src/yscg/models 源码包）
+# 模型产物与注册表状态（仅仓库根目录，避免误伤源码包）
 artifacts/
 checkpoints/
 /models/

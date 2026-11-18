@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[1]
 TASKS = [
     ("A", "气体识别", "a-气体识别", "分类"),
     ("B", "轴承剩余寿命", "b-轴承剩余寿命预测", "分钟"),

@@ -1,74 +1,46 @@
 # 工业模型自进化系统 YSCG
 
-**本分支的参赛 Harness 交接入口**见 [从这里接手](zhixun-harness/docs/README.md)。其中包含版本基准、赛题规则、A/B/C 对照结果、运行方法和下一项待验证实验。
+第二届北京市大学生「人工智能+」创新大赛「智训引擎」赛题参赛项目。
 
-「智训引擎」赛题参赛项目 — 工业制造场景下的模型训练与超参数优化。
+当前主线是可提交的 `zhixun-harness/`：在官方 SDK 的轮次协议下，逐轮读取公开数据、续训候选、
+按公开主指标决定采用或保留，并把每轮证据写进 `rounds.json`。
 
-目标：构建一套在漂移数据流上**无人值守**运行的模型自进化系统，闭环完成
-`漂移监测 → 诊断归因 → 实验优化 → 评估上线 → 回滚`，实现
-「模型层自迭代 + 策略层自改进」的受控 RSI（Recursive Self-Improvement）。
+## 目录
 
-## 系统架构
-
-```
- 数据流 ──▶ ① 漂移监测(PSI/置信度) ──▶ ② 诊断归因(逐特征贡献) ──▶ ③ 策略决策
- (隐藏测试流)                                                   规则引擎兜底 + LLM 顾问
-                                                                    │
-          ⑤ champion/challenger 对比 ◀── ④ 实验执行(SwanLab 记录) ◀─┘
-          胜→上线 / 负→回滚              轻量适配 / 全量重训 / HPO
-```
-
-全部变更受护栏约束：标注配额、重训次数、HPO 试验数上限、策略白名单。
+| 路径 | 用途 |
+| --- | --- |
+| `zhixun-harness/stage2_official/` | 平台提交入口与核心模块，模块地图见该目录的 [README](zhixun-harness/stage2_official/README.md) |
+| `zhixun-harness/stage2_official/tests/` | 该包单元测试 |
+| `zhixun-harness/stage1_local/`、`stage2_local/` | V1/V2 历史工具：本地训练、规划、追踪 |
+| `zhixun-harness/round_review/` | 十轮演练对比报告 |
+| `zhixun-harness/tools/` | 独立小工具 |
+| `zhixun-harness/docs/` | 交接文档、调研与实验记录 |
+| `models/` | 官方 CPU 模型包（本地输入，不入库） |
+| `data/`、`artifacts/`、`swanlog/` | 数据、模型产物、SwanLab 本地记录，均不入库 |
 
 ## 快速开始
 
+```powershell
+$env:PYTHONPATH = "$PWD\zhixun-harness;$PWD"
+Set-Location zhixun-harness
+python -m pytest stage2_official/tests stage2_local/test_harness.py -q
+python -B -m stage2_official.rehearse --name demo --task all --rounds 10
+```
+
+演练依赖两份本地输入：`stage2_official/sdk/`（官方 SDK 1.0.2）与
+`{a-气体识别,b-轴承剩余寿命预测,c-发动机寿命预测}/cpu工业模型/`。恢复方法见
+`zhixun-harness/docs/README.md`。
+
+## 分支
+
+| 分支 | 内容 |
+| --- | --- |
+| `main` | 当前主线：V3 harness + 准入护栏 + 归一化兜底 + 协变量诊断 |
+| `WRB` | M0 闭环快照，仅存档，不参与开发 |
+| `archive/main-m0` / `archive/wrb-implementation` | 迁移前的备份标签 |
+
+## 提交镜像
+
 ```bash
-pip install -e .
-python experiments/run_simulation.py --model lgbm --batches 90
-# 或深度学习路线
-python experiments/run_simulation.py --model mlp --batches 90
+bash zhixun-harness/stage2_official/verify_linux.sh <run-name> <image-tag>
 ```
-
-仿真场景与对照臂：
-
-```bash
-# persistent：漂移持续到流结束（考验自适应）；transient：漂移后恢复（考验回滚保护）
-python experiments/run_simulation.py --scenario persistent
-# 静态基线对照（部署后不更新的模型），用于计算自进化的性能增益
-python experiments/run_simulation.py --static
-# 标注预算、SwanLab 模式等可调
-python experiments/run_simulation.py --budget 600 --mode local
-```
-
-实验记录写入 `swanlog/`（本地模式）；接入 SwanLab 云端账号后自动同步。
-
-```bash
-pytest   # 冒烟测试
-```
-
-## 目录结构
-
-```
-src/yscg/
-├── config.py       # 系统配置与策略参数
-├── data/           # 数据流接口 + 漂移仿真器（官方数据包发布前用于开发闭环）
-├── drift/          # 漂移监测（PSI/置信度）+ 归因
-├── models/         # 模型工厂（LightGBM / Keras MLP）+ 版本注册表
-├── strategy/       # 规则策略引擎 + 可插拔 LLM 顾问
-├── pipeline/       # 闭环编排 SelfEvolutionLoop
-└── guardrails/     # 预算管理与策略白名单（受控 RSI）
-experiments/        # SwanLab 实验入口脚本
-tests/              # 冒烟测试
-```
-
-## 里程碑
-
-- M0（进行中）：仓库骨架 + 漂移仿真器 + 闭环 v0.1 + SwanLab 规范接入
-- M1：官方数据包发布后对齐数据格式与评测脚本，公开集跑通全流程
-- M2：PyTRiO LLM 接入、Docker 镜像打包、离线自测与成本调优
-- M3：实验报告与答辩材料
-
-## 环境
-
-Python ≥ 3.10；依赖见 `requirements.txt`（与开发机实测版本锁定一致）。
-官方评测在统一离线环境运行提交的镜像，与本地环境无关。

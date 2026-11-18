@@ -12,7 +12,8 @@
 | `stage2_official/stage_linux_workspace.py` | 为 WSL 2 在 Ubuntu 自己的磁盘上准备验收目录，供 SDK 使用标准 Linux 文件权限。 |
 | `stage2_official/export_swanlab.py` | 将本地模拟实验记录导出到 SwanLab 离线文件并回读核验。 |
 | `main.py`、`round_review/` | 本地十轮复盘入口及分析模块，读取已有回执，验证同条件复跑并导出图表。 |
-| `stage1_local/`、`stage2_local/`、`run_initial_models.py` | 公开起点验证、早期训练与评估工具、策略约束和本地故障测试。 |
+| `stage1_local/`、`stage2_local/`、`tools/run_initial_models.py` | 公开起点验证、早期训练与评估工具、策略约束和本地故障测试。 |
+| `stage2_official/tests/` | 本包单元测试；模块职责与依赖方向见 `stage2_official/README.md`。 |
 
 ## 一轮怎样作出决定
 
