@@ -11,6 +11,9 @@ import time
 
 from stage1_local.common import TASKS
 
+# One candidate may spend up to five epochs, matching the official continuation example.
+MAX_EPOCHS_PER_CANDIDATE = 5
+
 
 def baseline(task, module):
     return importlib.import_module(f"{TASKS[task]}.cpu工业模型.baselines.{module}")
@@ -100,8 +103,8 @@ def main():
     parser.add_argument("--l2sp-strength", type=float)
     parser.add_argument("--residual-mean-weight", type=float)
     args = parser.parse_args()
-    if not 1 <= args.epochs <= 2:
-        parser.error("Each candidate needs one or two epochs")
+    if not 1 <= args.epochs <= MAX_EPOCHS_PER_CANDIDATE:
+        parser.error("Each candidate needs one to five epochs")
     if (args.recipe == "l2sp") != (args.l2sp_strength is not None):
         parser.error("L2-SP requires an explicit --l2sp-strength")
     if (args.recipe == "b_residual_v1") != (args.residual_mean_weight is not None):

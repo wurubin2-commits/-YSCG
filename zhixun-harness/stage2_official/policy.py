@@ -3,6 +3,7 @@
 import hashlib
 import json
 import math
+import os
 from typing import Literal
 
 from pydantic import Field, ValidationError, model_validator
@@ -13,12 +14,13 @@ from stage2_official.continuation import B_RESIDUAL_RECIPE, L2SP_MAX_STRENGTH, L
 RECIPES = {"A": ("standard", "class_balance", "l2"), "B": ("standard", "huber", "l2"),
            "C": ("standard", "huber", "l2")}
 OUTPUT_TOKEN_LIMIT = 512
+EPOCH_MAX = int(os.environ.get("ZHIXUN_EPOCH_MAX", "2"))
 PROMPT = (
     'Decide one CPU experiment. Candidates are derived from measured evidence: answer '
     '{"action":"train","candidate":k,"reason":"..."} to pick one, or send a full train object '
     'to override. JSON only. Keep: {"action":"keep","reason":"..."}, only when every candidate '
     'would lose accuracy. train fields: reason, rate (0.00005–0.005), batch (32/64/128/256), '
-    'epochs (1/2). Reason 200 chars max.'
+    'epochs (1/' + str(EPOCH_MAX) + '). Reason 200 chars max.'
 )
 
 

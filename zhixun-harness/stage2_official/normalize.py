@@ -7,6 +7,7 @@ into the legal range and the original value is preserved for later auditing.
 
 import json
 import math
+import os
 
 from pydantic import ValidationError
 
@@ -17,7 +18,7 @@ RATE_MIN = 0.00005
 RATE_MAX = 0.005
 BATCHES = (32, 64, 128, 256)
 EPOCH_MIN = 1
-EPOCH_MAX = 2
+EPOCH_MAX = int(os.environ.get("ZHIXUN_EPOCH_MAX", "2"))
 REASON_MAX = 200
 L2SP_DEFAULT = 1.0
 RESIDUAL_DEFAULT = 0.5

@@ -1,12 +1,17 @@
 """Use Pydantic AI to validate one proposed continuation or keep action."""
 
 import json
+import os
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic_ai import Agent, ModelResponse, PromptedOutput, TextPart
 from pydantic_ai.models.function import FunctionModel
 from pydantic_ai.usage import UsageLimits
+
+# The official continuation example spends five epochs per round; keep two as the default so
+# an ordinary run behaves exactly as before.
+EPOCH_MAX = int(os.environ.get("ZHIXUN_EPOCH_MAX", "2"))
 
 
 class Proposal(BaseModel):
@@ -16,7 +21,7 @@ class Proposal(BaseModel):
     reason: Annotated[str, Field(min_length=1, max_length=250)]
     rate: Annotated[float, Field(ge=0.00005, le=0.005, allow_inf_nan=False)] | None = None
     batch: Literal[32, 64, 128, 256] | None = None
-    epochs: Annotated[int, Field(ge=1, le=2)] | None = None
+    epochs: Annotated[int, Field(ge=1, le=EPOCH_MAX)] | None = None
 
     @model_validator(mode="after")
     def check_parameters(self):

@@ -30,13 +30,70 @@ def load(path):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def projection(path, destination, rounds):
+def split_group(row):
+    """Physical owner of one row: a gas class, a bearing, or one CMAPSS unit."""
+    identity = row["id"]
+    if identity.startswith("gas_"):
+        return "class:" + str(row.get("answer"))
+    if identity.startswith("xjtu_"):
+        return "bearing:" + identity.rsplit("_s", 1)[0]
+    match = re.match(r"(fd\d{3})_u(\d+)_c", identity)
+    if match:
+        return f"unit:{match.group(1)}_u{match.group(2)}"
+    meta = row.get("meta") or {}
+    return "batch:" + str(meta.get("source_batch") or "")
+
+
+def split_order(row):
+    match = re.search(r"(\d+)$", row["id"])
+    return int(match.group(1)) if match else 0
+
+
+def stratified_batches(rows, rounds):
+    """Split so every round sees every physical group across its whole progress range.
+
+    The official baseline example trains on the whole public file each round. When a
+    rehearsal must simulate arrival in pieces, keeping every class, bearing and engine
+    unit represented in every piece is what keeps the per-round distribution close to the
+    validation distribution. Plain row order does the opposite: it hands one round a
+    single gas class or a single bearing, which is a distribution shift, not a curriculum.
+    """
+    groups = {}
+    for row in rows:
+        groups.setdefault(split_group(row), []).append(row)
+    batches = [[] for _ in range(rounds)]
+    for key in sorted(groups):
+        members = sorted(groups[key], key=split_order)
+        # Each round receives one contiguous slice of every group, so the group stays in
+        # time order and all rounds together still cover the whole group exactly once.
+        base, extra = divmod(len(members), rounds)
+        cursor = 0
+        for index in range(rounds):
+            size = base + (1 if index < extra else 0)
+            batches[index].extend(members[cursor:cursor + size])
+            cursor += size
+    return batches
+
+
+def projection(path, destination, rounds, strategy="quota"):
+    """Write one training file per round.
+
+    quota keeps the historical row-order split; stratified keeps every physical group in
+    every round; full hands the whole public file to every round, which is what the
+    official continuation example does.
+    """
     with path.open(encoding="utf-8") as stream:
         rows = [json.loads(line) for line in stream if line.strip()]
-    for i in range(rounds):
-        target = destination / f"train-{i+1:02d}.jsonl"
+    if strategy == "full":
+        batches = [rows for _ in range(rounds)]
+    elif strategy == "stratified":
+        batches = stratified_batches(rows, rounds)
+    else:
+        batches = [rows[i*len(rows)//rounds:(i+1)*len(rows)//rounds] for i in range(rounds)]
+    for i, batch in enumerate(batches, 1):
+        target = destination / f"train-{i:02d}.jsonl"
         with target.open("x", encoding="utf-8") as out:
-            for row in rows[i*len(rows)//rounds:(i+1)*len(rows)//rounds]:
+            for row in batch:
                 print(json.dumps({k: row[k] for k in ("id", "inputs", "answer")}, ensure_ascii=False), file=out)
         yield target
 
@@ -296,7 +353,7 @@ def run_task(task, args, destination):
     count = 1 if args.scenario == "duplicate" else args.rounds
     if args.scenario == "repeat_pairs":
         count = (args.rounds + 1) // 2
-    batches = list(projection(train, destination, count))
+    batches = list(projection(train, destination, count, getattr(args, "split", "quota")))
     if args.scenario == "duplicate":
         batches *= args.rounds
     if args.scenario == "repeat_pairs":
@@ -407,6 +464,8 @@ def main():
     parser.add_argument("--name", required=True)
     parser.add_argument("--task", choices=("all", *CONTRACTS), default="all")
     parser.add_argument("--rounds", choices=range(1, 11), default=10, type=int)
+    parser.add_argument("--split", choices=("quota", "stratified", "full"), default="quota",
+                        help="How each round's training file is cut from the public projection")
     parser.add_argument("--image", help="Official-entry image to use instead of the host Python")
     parser.add_argument("--live", metavar="BASE_MODEL",
                         help="Ask a real PyTRiO model instead of the scripted proposals, e.g. Qwen/Qwen3.8-27B")
@@ -443,7 +502,7 @@ def main():
     summary = {task: run_task(task, args, output / task) for task in tasks}
     write_json(output / "summary.json", {
         "mode": "mock_host" if ADVISOR is None else f"live:{args.live}",
-        "scenario": args.scenario, "describe": spec, "tasks": summary,
+        "scenario": args.scenario, "split": args.split, "describe": spec, "tasks": summary,
         "advisor": ADVISOR.report() if ADVISOR is not None else None})
     print(output / "summary.json", flush=True)
 

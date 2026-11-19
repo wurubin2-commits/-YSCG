@@ -161,6 +161,7 @@ def propose(context):
         else:
             break
     probe_rate = max(RATE_MIN, min(parent_rate / 3.0, RATE_MAX))
+    step = max(1, int(context.get("round_epochs") or 1))
     recipes = structural_priority(task, allowed, prior, direction,
                                   cause=context.get("cause"), failed_slices=context.get("failed_slices") or (),
                                   failed=tuple(context.get("failed_recipes") or ()))
@@ -185,21 +186,21 @@ def propose(context):
         recipe = recipes[0]
         strength = (1.0 if recipe == L2SP_RECIPE else 0.5 if recipe == B_RESIDUAL_RECIPE else None)
         rate = max(RATE_MIN, probe_rate * (0.5 if stalled >= 2 else 1.0))
-        add("structural", _params(rate, parent_batch, 1, recipe, strength),
+        add("structural", _params(rate, parent_batch, step, recipe, strength),
             (f"Change the objective to {recipe}: it targets the attributed cause"
              if cause != "none" else
              f"Change the objective to {recipe}: the plain step has stopped paying"),
             "structural")
 
     if last is None:
-        add("probe_step", _params(probe_rate, parent_batch, 1, "standard"),
+        add("probe_step", _params(probe_rate, parent_batch, step, "standard"),
             "No measurement yet: probe below the parent learning rate", "probe")
         add_structural()
     elif last["gain"] > 0:
         # Repeating the exact scale that worked overshoots on the next step (B round 2 lost
         # 40 RMSE that way), so the scale decays gently while the direction still pays.
         rate = max(RATE_MIN, (last["rate"] or probe_rate) * 0.6)
-        add("continue_step", _params(rate, parent_batch, 1, "standard"),
+        add("continue_step", _params(rate, parent_batch, step, "standard"),
             "Last step improved accuracy: continue at a slightly smaller scale", "continue")
         add_structural()
     else:
@@ -210,10 +211,10 @@ def propose(context):
         last_structural = last["recipe"] != "standard"
         if (stalled >= 1 or losses >= 1) and not last_structural:
             add_structural()
-            add("safe_step", _params(rate, parent_batch, 1, "standard"),
+            add("safe_step", _params(rate, parent_batch, step, "standard"),
                 "Last step lost accuracy: halve it before trying again", "small")
         else:
-            add("safe_step", _params(rate, parent_batch, 1, "standard"),
+            add("safe_step", _params(rate, parent_batch, step, "standard"),
                 "Last step lost accuracy: halve it before trying again", "small")
             add_structural()
     best_score, best = best_ever(prior, direction)
@@ -225,7 +226,7 @@ def propose(context):
     if best is not None and stalled >= 2 and not elite_is_parent:
         config = best.get("configuration") or {}
         if config.get("rate"):
-            add("elite_replay", _params(config["rate"], config.get("batch") or parent_batch, 1,
+            add("elite_replay", _params(config["rate"], config.get("batch") or parent_batch, step,
                                         config.get("recipe") or "standard",
                                         config.get("l2sp_strength") or config.get("residual_mean_weight")),
                 f"Replay round {best.get('round')}'s best measured configuration on the current parent",

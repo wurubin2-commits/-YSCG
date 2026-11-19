@@ -30,7 +30,10 @@ TASKS = ("classification", "regression")
 CONTRACTS = {"A": ("classification", "macro_f1", "higher"),
              "B": ("regression", "rmse", "lower"), "C": ("regression", "rmse", "lower")}
 PREDICT_ARGV = ["python3", "/app/harness.py", "predict"]
-MAX_EPOCHS = 12
+# The whole-round budget stays at 12 by default; the official continuation example spends
+# five epochs per round instead, which needs both a larger total and a larger per-round step.
+MAX_EPOCHS = int(os.environ.get("ZHIXUN_MAX_EPOCHS", "12"))
+ROUND_EPOCHS = int(os.environ.get("ZHIXUN_ROUND_EPOCHS", "1"))
 
 
 def read_object(path):
@@ -269,6 +272,7 @@ def train(rnd):
                       if number(item.get("parent_learning_rate")) is not None), None)
     candidates = evolution.propose({
         "task": task, "direction": direction, "parent_rate": base_rate or model.meta["learning_rate"],
+        "round_epochs": ROUND_EPOCHS,
         "parent_batch": model.meta["batch_size"], "remaining": remaining,
         "allowed_recipes": recipes, "prior": prior, "stalled": stalled,
         "cause": (diagnosis or {}).get("cause"), "failed_slices": failed_slices,
