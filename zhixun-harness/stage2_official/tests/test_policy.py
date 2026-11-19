@@ -48,6 +48,16 @@ class ExperimentHistoryTest(unittest.TestCase):
         self.assertNotIn("hypothesis", results[0])
         self.assertNotIn("reason", results[0]["params"])
 
+    def test_feedback_carries_the_blocked_slice_of_a_refusal(self):
+        row = self.record(2, "start", "same", "stability_keep")
+        row["local_train_receipt"]["stability"] = [
+            {"slice": "low_rul", "metric": "mae", "before": 308.91, "after": 448.64, "passed": False},
+            {"slice": "mid_rul", "metric": "mae", "before": 200.0, "after": 190.0, "passed": True}]
+        results = history_feedback([row], [], "start", "same", 3)
+        self.assertEqual([item["round"] for item in results], [2])
+        self.assertEqual(results[0]["blocked_slices"],
+                         [{"slice": "low_rul", "metric": "mae", "before": 308.91, "after": 448.64}])
+
     def test_l2sp_strength_changes_experiment_identity(self):
         trial = {**self.configuration, "recipe": "l2sp", "l2sp_strength": 1.0}
         record = self.record(1, "start", "batch1", "measured_keep")

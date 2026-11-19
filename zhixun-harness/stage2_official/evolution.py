@@ -32,7 +32,7 @@ CAUSE_RECIPE = {
     "label_shift": "class_balance",
     "target_shift": {"A": "class_balance", "B": B_RESIDUAL_RECIPE, "C": "huber"},
     "operating_condition": "c_group_mse_v1",
-    "covariate_shift": {"A": "sensor_mask_v1", "B": "huber", "C": "c_group_mse_v1"},
+    "covariate_shift": {"A": "sensor_mask_v1", "B": B_RESIDUAL_RECIPE, "C": "c_group_mse_v1"},
 }
 
 
@@ -48,6 +48,14 @@ def _ratio(direction, before, after):
     return delta / abs(before)
 
 
+def _blocked_rows(item):
+    """Protected slices this trial broke, with the numbers that broke them."""
+    rows = (item.get("local_train_receipt") or {}).get("stability") or []
+    return [{"slice": row.get("slice"), "metric": row.get("metric"),
+             "before": row.get("before"), "after": row.get("after")}
+            for row in rows if row.get("passed") is False]
+
+
 def trials(prior, direction):
     """Measured training attempts, newest last, with their own gain and step size."""
     rows = []
@@ -58,6 +66,7 @@ def trials(prior, direction):
         if not _finite(item.get("parent_public_score")):
             continue
         rate, epochs = config.get("rate"), config.get("epochs")
+        blocked = _blocked_rows(item)
         rows.append({
             "round": item.get("round"),
             "recipe": config.get("recipe") or "standard",
@@ -69,8 +78,39 @@ def trials(prior, direction):
             "before": item.get("parent_public_score"),
             "after": item.get("candidate_public_score"),
             "strength": config.get("l2sp_strength") or config.get("residual_mean_weight"),
+            "blocked": [row["slice"] for row in blocked],
+            "blocked_rows": blocked,
         })
     return rows
+
+
+def rejected_recipes(prior, direction):
+    """Structural recipes this task already has evidence against.
+
+    Adoption is the only success signal. A candidate can improve the headline metric and still
+    be refused, because a protected slice regressed — that is precisely what a loss trading the
+    tail for the bulk looks like. Reading failure as "gain <= 0" misses those rejections and the
+    same doomed recipe gets proposed round after round, so both signals count here.
+
+    One exception matters: re-running an already adopted configuration on a converged parent
+    loses by construction, and that loss says nothing about the recipe. A recipe already paid
+    at exactly this rate/batch/strength is therefore not refuted by that repeat.
+    """
+    rejected = []
+    paid = {}
+    for item in trials(prior, direction):
+        if item["recipe"] == "standard":
+            continue
+        scale = (item["rate"], item["batch"], item["strength"])
+        if item["decision"] == "adopted":
+            paid.setdefault(item["recipe"], set()).add(scale)
+            continue
+        lost = _finite(item["gain"]) and item["gain"] <= 0
+        repeat = scale in paid.get(item["recipe"], ())
+        if (item["blocked"] or (lost and not repeat)) and item["recipe"] not in rejected:
+            rejected.append(item["recipe"])
+    return tuple(rejected)
+
 
 
 def best_ever(prior, direction):
@@ -94,7 +134,28 @@ def recipe_history(prior, direction):
     return {name: sum(values) / len(values) for name, values in scores.items()}
 
 
-def structural_priority(task, allowed, prior, direction, cause=None, failed_slices=(), failed=()):
+def demoted_recipes(prior, direction):
+    """Recipes whose only evidence is a repeat of a configuration that already paid.
+
+    Such a loss must not blacklist the recipe — re-running an adopted configuration on a
+    converged parent loses by construction — but it must not outrank untested and profitable
+    directions either. Demote, do not delete.
+    """
+    paid, repeated = {}, []
+    for item in trials(prior, direction):
+        if item["recipe"] == "standard":
+            continue
+        scale = (item["rate"], item["batch"], item["strength"])
+        if item["decision"] == "adopted":
+            paid.setdefault(item["recipe"], set()).add(scale)
+        elif _finite(item["gain"]) and item["gain"] <= 0 and scale in paid.get(item["recipe"], ()):
+            if item["recipe"] not in repeated:
+                repeated.append(item["recipe"])
+    return tuple(repeated)
+
+
+def structural_priority(task, allowed, prior, direction, cause=None, failed_slices=(), failed=(),
+                        demoted=()):
     """Order the structural recipes this batch's evidence actually justifies."""
     available = [name for name in STRUCTURAL.get(task, ()) if name in allowed]
     measured = recipe_history(prior, direction)
@@ -105,11 +166,20 @@ def structural_priority(task, allowed, prior, direction, cause=None, failed_slic
     hinted = CAUSE_RECIPE.get(cause or "")
     if isinstance(hinted, dict):
         hinted = hinted.get(task)
+    if "low_rul" in failed_slices and task == "B":
+        # Short-RUL regression is the signature of a loss that buys the bulk with the tail;
+        # `huber` did exactly that on B. The residual-weighted recipe targets the tail directly,
+        # so it outranks whatever the drift keyword suggested.
+        hinted = B_RESIDUAL_RECIPE
     ordered = []
 
-    def push(name):
-        if name and name in available and name not in ordered:
-            ordered.append(name)
+    def push(name, allow_demoted=False):
+        if not name or name not in available or name in ordered:
+            return
+        # A demoted direction never leads while anything fresher exists.
+        if name in demoted and not allow_demoted and any(other not in demoted for other in available):
+            return
+        ordered.append(name)
 
     if failed_slices:
         # A protected slice that regressed wants a loss that protects that slice.
@@ -118,11 +188,11 @@ def structural_priority(task, allowed, prior, direction, cause=None, failed_slic
             if name not in ("l2",):
                 push(name)
     push(hinted)
-    for name in sorted(available, key=lambda name: -measured.get(name, 0.0)):
+    for name in sorted(available, key=lambda name: (name in demoted, -measured.get(name, 0.0))):
         if measured.get(name, 0.0) >= 0.0:
             push(name)
     for name in available:
-        push(name)
+        push(name, allow_demoted=True)
     return ordered
 
 
@@ -164,7 +234,8 @@ def propose(context):
     step = max(1, int(context.get("round_epochs") or 1))
     recipes = structural_priority(task, allowed, prior, direction,
                                   cause=context.get("cause"), failed_slices=context.get("failed_slices") or (),
-                                  failed=tuple(context.get("failed_recipes") or ()))
+                                  failed=tuple(context.get("failed_recipes") or ()),
+                                  demoted=tuple(context.get("demoted_recipes") or ()))
     out = []
 
     def add(name, params, why, expected="improve"):
@@ -174,18 +245,22 @@ def propose(context):
                     "why": why, "expected": expected})
 
     def add_structural():
-        # Changing the objective is only justified by evidence: an attributed cause, a
-        # protected slice that regressed, a recipe that already paid here, or a plateau
-        # that survived the whole step-size annealing. Without that it is just noise on
-        # an under-fitted parent, and it measurably cost accuracy on B.
+        # Risk order: a plain step only changes the scale, a structural recipe changes what the
+        # loss optimizes and can win the headline metric while wrecking a protected slice. A
+        # single losing step is therefore not enough to buy that risk — the step anneals twice
+        # first. An attributed cause or an already-broken slice is real evidence and may skip
+        # the queue.
         cause = context.get("cause") or "none"
-        if not (recipes and (cause != "none" or context.get("failed_slices")
-                             or any(value > 0 for value in recipe_history(prior, direction).values())
-                             or stalled >= 1 or losses >= 1)):
+        proven = cause != "none" or bool(context.get("failed_slices"))
+        if not (recipes and (proven or losses >= 2 or stalled >= 2)):
             return
         recipe = recipes[0]
         strength = (1.0 if recipe == L2SP_RECIPE else 0.5 if recipe == B_RESIDUAL_RECIPE else None)
-        rate = max(RATE_MIN, probe_rate * (0.5 if stalled >= 2 else 1.0))
+        # The rate stays at the probe scale. A structural experiment is paid for by the objective,
+        # and the parent changes every adopted round, so the same configuration on a new parent is
+        # a legitimate new experiment (l2 at 0.001 paid three rounds running on A). Shrinking the
+        # step to dodge an apparent duplicate weakens exactly what is being tested.
+        rate = probe_rate
         add("structural", _params(rate, parent_batch, step, recipe, strength),
             (f"Change the objective to {recipe}: it targets the attributed cause"
              if cause != "none" else

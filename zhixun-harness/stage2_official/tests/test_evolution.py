@@ -2,8 +2,8 @@ import pytest
 
 from stage2_official import evolution
 from stage2_official.evolution import (
-    best_ever, brief, propose, rank, recipe_history, resolve_choice,
-    structural_priority, to_experiment, top_trainable, trials,
+    best_ever, brief, demoted_recipes, propose, rank, recipe_history, rejected_recipes,
+    resolve_choice, structural_priority, to_experiment, top_trainable, trials,
 )
 
 
@@ -163,3 +163,102 @@ def test_brief_drops_the_internal_score():
     view = brief(candidates)
     assert all(set(item) == {"id", "mutation", "params", "why"} for item in view)
     assert max(len(item["why"]) for item in view) <= 60
+
+
+def blocked(round_index, *, before, after, recipe="huber", blocked_slices=("low_rul",),
+            decision="stability_keep", rate=0.001):
+    """A candidate that improved the headline metric but broke a protected slice."""
+    record_row = record(round_index, before=before, after=after, rate=rate, recipe=recipe,
+                        decision=decision)
+    record_row["local_train_receipt"]["stability"] = [
+        {"slice": name, "rows": 420, "metric": "mae", "before": 308.91, "after": 448.64,
+         "passed": False}
+        for name in blocked_slices]
+    return record_row
+
+
+def test_rejected_recipes_counts_a_slice_regression_not_only_a_losing_gain():
+    # huber improved the headline RMSE by 85 but wrecked low_rul: refuted all the same.
+    prior = [blocked(3, before=681.16, after=595.59)]
+    assert rejected_recipes(prior, "lower") == ("huber",)
+    assert trials(prior, "lower")[0]["blocked"] == ["low_rul"]
+    assert trials(prior, "lower")[0]["blocked_rows"][0]["after"] == 448.64
+
+
+def test_rejected_recipes_never_blacklists_a_plain_step():
+    # A standard step that lost says the step was too long, not that the direction is wrong.
+    prior = [record(2, before=681.16, after=706.79, decision="measured_keep")]
+    assert rejected_recipes(prior, "lower") == ()
+
+
+def test_a_passing_structural_recipe_is_not_rejected():
+    paid = record(1, before=681.16, after=651.51, recipe="b_residual_v1", decision="adopted")
+    paid["local_train_receipt"]["stability"] = [
+        {"slice": "low_rul", "metric": "mae", "before": 308.91, "after": 300.0, "passed": True}]
+    assert rejected_recipes([paid], "lower") == ()
+
+
+def test_low_rul_regression_outranks_the_drift_keyword():
+    ordered = structural_priority(
+        "B", ("standard", "huber", "l2", "b_residual_v1", "l2sp"), [], "lower",
+        cause="covariate_shift", failed_slices=("low_rul",))
+    assert ordered[0] == "b_residual_v1"
+
+
+def test_a_refuted_recipe_stops_being_proposed():
+    prior = [blocked(3, before=681.16, after=595.59)]
+    candidates = propose({"task": "B", "direction": "lower", "parent_rate": 0.002, "parent_batch": 128,
+                          "remaining": 6, "allowed_recipes": ("standard", "huber", "l2",
+                                                              "b_residual_v1"),
+                          "prior": prior, "stalled": 1, "cause": "none",
+                          "failed_recipes": rejected_recipes(prior, "lower")})
+    recipes = [(item["params"] or {}).get("recipe") for item in candidates if item["mutation"] != "keep"]
+    assert "huber" not in recipes
+    assert any(name in ("b_residual_v1", "l2", "standard") for name in recipes)
+
+
+def test_repeating_a_paid_configuration_does_not_refute_the_recipe():
+    # Re-running an adopted configuration on a converged parent loses by construction; that
+    # says nothing about the recipe, and blacklisting it would push the search onto worse ones.
+    paid = record(1, before=681.16, after=651.51, recipe="b_residual_v1", decision="adopted",
+                  strength=0.5)
+    repeat = record(2, before=651.51, after=665.52, recipe="b_residual_v1", decision="measured_keep",
+                    strength=0.5)
+    assert rejected_recipes([paid, repeat], "lower") == ()
+    different_scale = record(3, before=651.51, after=670.0, recipe="b_residual_v1",
+                             decision="measured_keep", rate=0.0002, strength=0.5)
+    assert rejected_recipes([paid, repeat, different_scale], "lower") == ("b_residual_v1",)
+
+
+def test_structural_waits_for_a_second_plain_loss():
+    # One losing step earns another annealing, not an objective change: structural can win the
+    # headline metric while wrecking a protected slice, so it must queue behind cheap attempts.
+    prior = [record(1, before=681.16, after=706.79, decision="measured_keep")]
+    candidates = propose({"task": "B", "direction": "lower", "parent_rate": 0.003,
+                          "parent_batch": 128, "remaining": 6,
+                          "allowed_recipes": ("standard", "huber", "b_residual_v1"),
+                          "prior": prior, "stalled": 0, "cause": "none"})
+    assert "structural" not in [item["mutation"] for item in candidates]
+    two_losses = [record(1, before=681.16, after=706.79, decision="measured_keep"),
+                  record(2, before=706.79, after=731.0, decision="measured_keep")]
+    candidates = propose({"task": "B", "direction": "lower", "parent_rate": 0.003,
+                          "parent_batch": 128, "remaining": 6,
+                          "allowed_recipes": ("standard", "huber", "b_residual_v1"),
+                          "prior": two_losses, "stalled": 0, "cause": "none"})
+    assert "structural" in [item["mutation"] for item in candidates]
+
+
+def test_a_demoted_recipe_keeps_a_slot_but_never_leads():
+    # class_balance paid at 0.001 then lost at the same 0.001: not refuted, but it must not
+    # outrank `l2`, which is what actually kept paying on A.
+    paid = record(1, before=0.7140, after=0.7278, recipe="class_balance", decision="adopted",
+                  rate=0.001, epochs=1)
+    repeat = record(2, before=0.7278, after=0.7267, recipe="class_balance",
+                    decision="measured_keep", rate=0.001, epochs=1)
+    assert rejected_recipes([paid, repeat], "higher") == ()
+    assert demoted_recipes([paid, repeat], "higher") == ("class_balance",)
+    ordered = structural_priority("A", ("standard", "class_balance", "l2"), [paid, repeat],
+                                  "higher", cause="label_shift",
+                                  demoted=demoted_recipes([paid, repeat], "higher"))
+    assert ordered[0] == "l2"
+    assert "class_balance" in ordered

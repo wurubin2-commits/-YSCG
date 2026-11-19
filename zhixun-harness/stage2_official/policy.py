@@ -115,6 +115,15 @@ def history_feedback(prior, history, parent_sha, train_sha, round_index):
                          ("parent_public_score", "candidate_public_score"))
         if before is not None and after is not None:
             outcome["scores"] = [before, after]
+        # A refusal has to travel with its reason. "Scores went up, outcome was measured_keep"
+        # reads like noise; "low_rul MAE 308.91 -> 448.64" is a fact the model can act on.
+        stability = (record.get("local_train_receipt") or {}).get("stability") or []
+        blocked = [{"slice": row.get("slice"), "metric": row.get("metric"),
+                    "before": compact_score(row.get("before")),
+                    "after": compact_score(row.get("after"))}
+                   for row in stability if row.get("passed") is False]
+        if blocked:
+            outcome["blocked_slices"] = blocked
         outcomes.append(outcome)
 
     priority = {"same_batch": 0, "same_parent": 1, "older": 2}

@@ -251,12 +251,15 @@ def train(rnd):
     # converged parent loses accuracy under a normal step, and a ten-round budget only pays
     # for structural changes: so the evidence is turned into an ordered short list here.
     measured_trials = evolution.trials(prior, direction)
-    # Only a structural recipe can be judged by its objective: a standard step that lost
-    # accuracy says the step was too long, not that the default direction is wrong.
-    failed_recipes = sorted({item["recipe"] for item in measured_trials
-                             if item["recipe"] != "standard"
-                             and number(item["gain"]) is not None and item["gain"] <= 0})
+    # Adoption is the only success signal. A recipe that lost the headline metric, or that won it
+    # while breaking a protected slice, is refuted on this task; treating only "gain <= 0" as
+    # failure lets a rejected recipe be re-proposed until the budget runs out.
+    failed_recipes = evolution.rejected_recipes(prior, direction)
+    # A recipe whose only loss was a repeat of an adopted configuration is still usable; it just
+    # stops leading the queue, because the profitable direction deserves the round.
+    demoted_recipes = evolution.demoted_recipes(prior, direction)
     failed_slices = []
+    blocked_evidence = []
     # A keep round trains nothing, so its record carries no stability receipt. Walk back to
     # the most recent candidate instead of only reading the immediate predecessor, matching
     # how latest_receipt() resolves tool evidence.
@@ -264,6 +267,11 @@ def train(rnd):
         stability = (item.get("local_train_receipt") or {}).get("stability") or []
         if stability:
             failed_slices = [row.get("slice") for row in stability if row.get("passed") is False]
+            blocked_evidence = [{"round": item.get("round"), "slice": row.get("slice"),
+                                 "metric": row.get("metric"),
+                                 "before": compact_score(row.get("before")),
+                                 "after": compact_score(row.get("after"))}
+                                for row in stability if row.get("passed") is False]
             break
     # The step scale must not follow the parent's own rate, because every candidate writes
     # its rate back into the checkpoint meta: anchoring on it makes the probe collapse to
@@ -276,35 +284,39 @@ def train(rnd):
         "parent_batch": model.meta["batch_size"], "remaining": remaining,
         "allowed_recipes": recipes, "prior": prior, "stalled": stalled,
         "cause": (diagnosis or {}).get("cause"), "failed_slices": failed_slices,
-        "failed_recipes": failed_recipes})
+        "failed_recipes": failed_recipes, "demoted_recipes": demoted_recipes})
     prompt["candidates"] = evolution.brief(candidates)
     if candidates:
         instructions += (" Answer with a candidate id when one of them is justified; keeping"
                          " without a measured reason spends the round for nothing.")
-    # Tool specifications cost prompt tokens on every sampling round, so they are offered only
-    # where fresh evidence can change the decision: the blind first round, a plateau, or a failed
-    # trial. Routine rounds already carry the measured summary and stay tool-free.
+    # A refusal is evidence, but only if the model can see it. Without these the same objective
+    # gets proposed again: the headline metric improved, so nothing in the summary says "no".
+    if failed_recipes:
+        prompt["failed_recipes"] = list(failed_recipes)
+        instructions += (" Recipes in failed_recipes were already refuted on this task: do not"
+                         " choose them again, whichever step size the candidate carries.")
+    if blocked_evidence:
+        prompt["blocked_slices"] = blocked_evidence
+        instructions += (" blocked_slices lists the protected slice that regressed despite a better"
+                         " headline score: change the objective to protect it, do not repeat it.")
+    floors = admission.slice_floors(prior)
+    if floors:
+        prompt["slice_floors"] = {name: compact_score(value) for name, value in floors.items()}
+    # Token cost is not the binding constraint on this line: the harness exists so a real model
+    # can look at its own last training receipt before deciding. The read tools therefore ride on
+    # every round that has evidence, not only on rounds where the operator ran out of plans.
     last_outcome = prior[-1].get("decision") if prior else None
     # The current round has not trained yet: the informative receipt and loss curve belong to
-    # the previous trial. Offer tools only when that evidence exists and the summary leaves a
-    # real question open, so routine rounds do not pay for tool specifications they never use.
-    # A keep round trains nothing, so the latest receipt can be several rounds back: walk back
-    # to the most recent candidate instead of only looking at the immediate predecessor.
+    # the previous trial. A keep round trains nothing, so the latest receipt can be several
+    # rounds back; latest_receipt() walks back to the most recent candidate.
     receipt_dir = latest_receipt(directory, rnd.round_index)
     evidence_available = receipt_dir is not None
-    # The candidate list already carries the conclusion of that reading, so a tool call is
-    # only worth its tokens when the operator has no plan left. Otherwise the message and
-    # the specifications would both be paid for twice.
-    tools_wanted = (evidence_available
-                    and (stalled >= 2 or last_outcome in ("candidate_failed", "training_failed"))
-                    and evolution.top_trainable(candidates) is None)
+    tools_wanted = evidence_available
     if tools_wanted:
-        # A plateau or a failure means the summary has stopped teaching anything. Require one
-        # look at the training curve before the decision, so keep is justified by evidence.
         # Only the read tools are offered: the final JSON proposal already carries the
-        # hyper-parameters, so a separate write_config round would cost a whole extra sample.
-        instructions += (" First call read_log_tail once on history.jsonl (10 lines max) to inspect "
-                         "the last training curve, then give the JSON decision.")
+        # hyper-parameters, so a separate write_config round would only cost another sample.
+        instructions += (" Read the evidence you need with read_metrics or read_log_tail before"
+                         " deciding, then give the JSON decision.")
     if stalled >= 2:
         # A plateau means another step at the same scale buys nothing. Keeping is not a
         # direction change: it leaves the score exactly where it is, so ask for a real one.
