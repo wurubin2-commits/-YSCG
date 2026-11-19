@@ -1,0 +1,35 @@
+{
+  "A": {
+    "metric": "macro_f1",
+    "rounds": 10,
+    "accepted": 2,
+    "cumulative_gain": 0.005727,
+    "epochs_spent": 10,
+    "tokens_spent": 0,
+    "wall_seconds": 96.2843,
+    "gain_per_epoch": 0.000573,
+    "gain_per_1k_tokens": null
+  },
+  "B": {
+    "metric": "rmse",
+    "rounds": 10,
+    "accepted": 4,
+    "cumulative_gain": 52.255778,
+    "epochs_spent": 10,
+    "tokens_spent": 0,
+    "wall_seconds": 94.2445,
+    "gain_per_epoch": 5.225578,
+    "gain_per_1k_tokens": null
+  },
+  "C": {
+    "metric": "rmse",
+    "rounds": 10,
+    "accepted": 4,
+    "cumulative_gain": -2.277096,
+    "epochs_spent": 10,
+    "tokens_spent": 0,
+    "wall_seconds": 115.4449,
+    "gain_per_epoch": -0.22771,
+    "gain_per_1k_tokens": null
+  }
+}

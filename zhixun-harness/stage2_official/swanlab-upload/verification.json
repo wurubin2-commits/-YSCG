@@ -1,0 +1,26 @@
+{
+  "A": {
+    "mode": "cloud",
+    "project": "yscg-harness",
+    "experiment_name": "A-official-sdk-mock-host",
+    "run_id": "5dotnp72",
+    "url": "https://swanlab.cn/@plmokn/yscg-harness/runs/5dotnp72",
+    "rounds": 10
+  },
+  "B": {
+    "mode": "cloud",
+    "project": "yscg-harness",
+    "experiment_name": "B-official-sdk-mock-host",
+    "run_id": "s04a5u28",
+    "url": "https://swanlab.cn/@plmokn/yscg-harness/runs/s04a5u28",
+    "rounds": 10
+  },
+  "C": {
+    "mode": "cloud",
+    "project": "yscg-harness",
+    "experiment_name": "C-official-sdk-mock-host",
+    "run_id": "1n8nrp1d",
+    "url": "https://swanlab.cn/@plmokn/yscg-harness/runs/1n8nrp1d",
+    "rounds": 10
+  }
+}

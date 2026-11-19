@@ -195,7 +195,13 @@ def run_round(task, idx, directory, train, validation, parent, history, prior_st
              "model_name": "mock:offline", "max_output_tokens": 512, "parent_checkpoint_sha256": checkpoint,
              "parent_artifact": artifact, "artifacts": [artifact], "current_validation": {"metrics": parent_scores},
              "state_path": ("/state" if image else str(prior_state)) if prior_state else None,
-             "state_sha256": state_sha, "wall_seconds": 90}
+             "state_sha256": state_sha, "wall_seconds": 90,
+             # The 1.0.4 host uploads artifacts in chunks; this stands in for the host's
+             # advertised limits so the SDK exercises its real streaming path offline.
+             "resource_limits": {"artifact_upload_protocol": "chunked-v1",
+                                 "artifact_bytes": 512 * 1024 * 1024,
+                                 "state_bytes": 64 * 1024 * 1024,
+                                 "upload_chunk_bytes": 1024 * 1024}}
     if scenario == "wrong_parent":
         start["parent_artifact"]["files"][0]["sha256"] = "sha256:" + "0" * 64
     if scenario == "time_budget":
@@ -219,6 +225,7 @@ def run_round(task, idx, directory, train, validation, parent, history, prior_st
         variables["ZHIXUN_ENABLE_C_GROUP_MSE"] = "1"
     trace, model_ids = [], []
     requests = []
+    uploads = {}
     candidate, final_state, decision = None, None, None
     with process("train", directory, image=image, mounts=mounts, variables=variables) as child:
         send(child, start)
@@ -307,12 +314,45 @@ def run_round(task, idx, directory, train, validation, parent, history, prior_st
                     message = {"role": "assistant", "content": content}
                 reply.update(type="model_response", call_id=model_id, response={
                     "choices": [{"message": message}]})
+            elif protocol == "upload_begin_request":
+                kind = frame["kind"]
+                if kind not in ("candidate", "state"):
+                    raise AssertionError(f"Unexpected upload kind {kind}")
+                root = directory / kind
+                root.mkdir()
+                upload_id = f"{kind}-{seq}"
+                uploads[upload_id] = {"root": root, "files": frame["files"], "offsets": {}}
+                reply.update(type="upload_begin_response", upload_id=upload_id)
+            elif protocol == "upload_chunk_request":
+                entry = uploads[frame["upload_id"]]
+                name = frame["path"]
+                target = entry["root"] / name
+                if not target.resolve().is_relative_to(entry["root"].resolve()):
+                    raise AssertionError("Unsafe simulated upload path")
+                offset = frame["offset"]
+                if offset != entry["offsets"].get(name, 0):
+                    raise AssertionError(f"Chunk arrived at the wrong offset for {name}")
+                payload = base64.b64decode(frame["data_base64"], validate=True)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                with target.open("ab") as stream:
+                    stream.write(payload)
+                entry["offsets"][name] = offset + len(payload)
+                reply.update(type="upload_chunk_response", offset=entry["offsets"][name])
+            elif protocol == "upload_finish_request":
+                upload_id = frame["upload_id"]
+                entry = uploads[upload_id]
+                for item in entry["files"]:
+                    path = entry["root"] / item["path"]
+                    if path.stat().st_size != item["size_bytes"] or sha256(path) != item["sha256"]:
+                        raise AssertionError(f"Uploaded file does not match its manifest: {item['path']}")
+                reply.update(type="upload_finish_response", upload_id=upload_id)
             elif protocol == "candidate_request":
                 if frame["parent_checkpoint_sha256"] != checkpoint or frame["parent_artifact_id"] != artifact["artifact_id"]:
                     raise AssertionError("Wrong candidate parent")
                 if frame["artifact"]["predict_argv"] != PREDICTION:
                     raise AssertionError("Wrong prediction command")
-                save_files(directory / "candidate", frame["files"])
+                if uploads.get(frame["upload_id"], {}).get("root") != directory / "candidate":
+                    raise AssertionError("Candidate payload was not uploaded through this round")
                 candidate = directory / "candidate/checkpoint.npz"
                 measured = local_scores(task, validation, candidate)
                 if scenario in ("reject_candidate", "duplicate", "repeat_pairs"):
@@ -323,7 +363,8 @@ def run_round(task, idx, directory, train, validation, parent, history, prior_st
                 if frame["parent_state_sha256"] != state_sha:
                     raise AssertionError("Wrong predecessor state")
                 final_state = directory / "state"
-                save_files(final_state, frame["files"])
+                if uploads.get(frame["upload_id"], {}).get("root") != final_state:
+                    raise AssertionError("Round state was not uploaded through this round")
                 reply.update(type="state_response", state_sha256=sha256(final_state / "rounds.json"))
             else:
                 raise AssertionError(f"Unexpected protocol message {protocol}")
@@ -490,8 +531,11 @@ def main():
     output.mkdir(parents=True)
     with process("describe", output, image=args.image) as child:
         spec = read(child)
+        # Compare against the bundled SDK instead of a pinned literal: the platform publishes
+        # new SDK builds, and a stale constant would reject the real entrypoint on every run.
+        from contest_harness.protocol import SDK_VERSION
         if (spec["protocol"], spec["model_access"], spec["sdk_version"], set(spec["tasks"])) != (
-            "contest.harness.workspace.v2", "host_gateway_rpc", "1.0.2", {"classification", "regression"}
+            "contest.harness.workspace.v2", "host_gateway_rpc", SDK_VERSION, {"classification", "regression"}
         ):
             raise AssertionError("Unexpected official describe contract")
     global ADVISOR
