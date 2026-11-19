@@ -57,7 +57,7 @@ export_swanlab     → rehearse
 
 | 变量 | 默认 | 作用 |
 | --- | --- | --- |
-| `ZHIXUN_ADMISSION` | 关闭 | 启用准入护栏 |
+| `ZHIXUN_ADMISSION` | 开启（设 0 关闭） | 启用准入护栏 |
 | `ZHIXUN_DIAGNOSE` | 关闭 | 计算训练/验证投影 PSI |
 | `ZHIXUN_RESEARCH_MODE` | 关闭 | 开放多配方、计算 TV 漂移与稳定性切片 |
 | `ZHIXUN_ENABLE_L2SP` / `ZHIXUN_ENABLE_B_RESIDUAL` / `ZHIXUN_ENABLE_SENSOR_MASK` / `ZHIXUN_ENABLE_C_GROUP_MSE` | 关闭 | 按任务开放对应配方 |

@@ -1,27 +1,31 @@
 """Create an allowlisted SDK image context without data, checkpoints, logs or credentials."""
 
 import argparse
+import ast
 from pathlib import Path
-import re
 import shutil
 
 from stage1_local.common import ROOT, TASKS, sha256, write_json
 from stage2_official.rehearse import load
 
-IMPORTED = re.compile(r"^\s*from stage2_official(?:\.(\w+)| import ([^\n]+))", re.MULTILINE)
-
 
 def required_modules(origin):
-    """Modules the entry imports, so a renamed file cannot silently leave the image."""
+    """Modules the entry imports, so a renamed file cannot silently leave the image.
+
+    Parsed with ast rather than a single-line regex: a parenthesized multi-line import is
+    legal Python and would otherwise look like a missing module (or slip through unlisted).
+    """
     names = set()
-    for match in IMPORTED.finditer(origin.read_text(encoding="utf-8")):
-        if match.group(1):
-            names.add(match.group(1))
+    tree = ast.parse(origin.read_text(encoding="utf-8"), filename=str(origin))
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.ImportFrom) or not node.module:
             continue
-        for item in match.group(2).split(","):
-            name = item.strip().partition(" as ")[0].strip()
-            if name and name != "*":
-                names.add(name)
+        if node.module == "stage2_official":
+            for alias in node.names:
+                if alias.name != "*":
+                    names.add(alias.name)
+        elif node.module.startswith("stage2_official."):
+            names.add(node.module.split(".", 2)[1])
     return names
 
 
@@ -49,6 +53,7 @@ def build(output, wheelhouse=None):
     copy(source / "normalize.py", "app/stage2_official/normalize.py")
     copy(source / "diagnostics.py", "app/stage2_official/diagnostics.py")
     copy(source / "attribution.py", "app/stage2_official/attribution.py")
+    copy(source / "evolution.py", "app/stage2_official/evolution.py")
     copy(source / "tool_layer.py", "app/stage2_official/tool_layer.py")
     copy(ROOT / "stage1_local/common.py", "app/stage1_local/common.py")
     copy(ROOT / "stage2_local/planner.py", "app/stage2_local/planner.py")

@@ -39,22 +39,30 @@ def test_gain_gate(monkeypatch):
     assert ok and gate == "pass"
 
 
-def test_anchor_floor_never_falls(monkeypatch):
+def test_anchor_floor_follows_the_measured_parent(monkeypatch):
+    """历史 floor 高于当前父分时不下修会永久锁死；下修到父分后，超过父分的候选应被放行。"""
     enable(monkeypatch)
     prior = [record("adopted", 0.75)]
-    ok, gate, reason = admission.evaluate(prior, [], "higher", 0.72, 0.73)
-    assert not ok and gate == "anchor" and "0.75" in reason
+    ok, gate, _ = admission.evaluate(prior, [], "higher", 0.72, 0.73)
+    assert ok and gate == "pass"
     ok, gate, _ = admission.evaluate(prior, [], "higher", 0.72, 0.76)
     assert ok and gate == "pass"
+
+
+def test_anchor_floor_still_blocks_a_candidate_below_the_parent(monkeypatch):
+    enable(monkeypatch)
+    prior = [record("adopted", 0.75)]
+    ok, gate, _ = admission.evaluate(prior, [], "higher", 0.76, 0.74)
+    assert not ok and gate == "gain"
 
 
 def test_anchor_floor_for_lower_is_better(monkeypatch):
     enable(monkeypatch)
     prior = [record("adopted", 50.0)]
     ok, gate, _ = admission.evaluate(prior, [], "lower", 52.0, 51.0)
-    assert not ok and gate == "anchor"
-    ok, gate, _ = admission.evaluate(prior, [], "lower", 52.0, 49.0)
     assert ok and gate == "pass"
+    ok, gate, _ = admission.evaluate(prior, [], "lower", 52.0, 53.0)
+    assert not ok and gate == "gain"
 
 
 def test_slice_floor(monkeypatch):

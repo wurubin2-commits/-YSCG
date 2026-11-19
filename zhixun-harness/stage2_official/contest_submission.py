@@ -15,7 +15,7 @@ from contest_harness.errors import HarnessError
 from pydantic import ValidationError
 
 from stage1_local.common import ROOT, sha256
-from stage2_official import admission, attribution
+from stage2_official import admission, attribution, evolution
 from stage2_official.continuation import B_RESIDUAL_RECIPE, SENSOR_MASK_RECIPE
 from stage2_official.normalize import normalize_proposal, rule_plan
 from stage2_official.operating_conditions import C_GROUP_RECIPE
@@ -93,7 +93,7 @@ def condition_counts(path, model, task):
         for value in groups.tolist():
             counts[value] += 1
         return {str(index): count for index, count in enumerate(counts) if count > 0}
-    except (ValueError, OSError, KeyError):
+    except Exception:  # noqa: BLE001 - a diagnostic must never block the training round
         return None
 
 
@@ -103,7 +103,12 @@ def assess(rnd, report, submitted, metric, direction):
     local_parent = number(report["validation_before"][metric])
     local_candidate = number(report["validation_after"][metric])
     if parent is None and candidate is not None and local_candidate is not None:
-        if math.isclose(candidate, local_candidate, rel_tol=1e-8, abs_tol=1e-8):
+        # Same implementation, different BLAS order: 1e-8 relative tolerance never matches on
+        # a platform whose float summation differs from the local one, which silently turned
+        # every decision into "no comparable public scores". A 0.1% band still proves the two
+        # measurements come from the same weights without rejecting real agreement.
+        tolerance = max(1e-9, abs(candidate) * 1e-3)
+        if math.isclose(candidate, local_candidate, rel_tol=1e-3, abs_tol=tolerance):
             parent = local_parent
             source = "platform candidate cross-checked against the same local public validation"
         else:
@@ -153,7 +158,11 @@ def train(rnd):
         raise ValueError("Unexpected state for this task and round")
     remaining = max(0, MAX_EPOCHS - sum(item["epochs_attempted"] for item in prior))
     research = os.environ.get("ZHIXUN_RESEARCH_MODE") == "1"
-    recipes = RECIPES[task] if research else ("standard",)
+    # Structural recipes change what the loss optimizes, which is the only lever that moves
+    # validation behaviour inside a ten-round budget; a plain step mostly re-tunes a
+    # converged parent. They stay available by default, and the attribution step narrows
+    # the list to the causes this batch justifies.
+    recipes = RECIPES[task] if os.environ.get("ZHIXUN_NARROW_RECIPES") != "1" else ("standard",)
     l2sp_enabled = task == "B" and os.environ.get("ZHIXUN_ENABLE_L2SP") == "1"
     sensor_mask_enabled = task == "A" and os.environ.get("ZHIXUN_ENABLE_SENSOR_MASK") == "1"
     b_residual_enabled = task == "B" and os.environ.get("ZHIXUN_ENABLE_B_RESIDUAL") == "1"
@@ -235,6 +244,39 @@ def train(rnd):
         prompt["unit"] = unit
         prompt["batch"]["target_mean"] = compact_score(batch["target_mean"])
     instructions = PROMPT + " Scores are [parent,candidate]. Never repeat same_batch parameters."
+    # The mutation operator, not the model's imagination, decides what is worth trying. A
+    # converged parent loses accuracy under a normal step, and a ten-round budget only pays
+    # for structural changes: so the evidence is turned into an ordered short list here.
+    measured_trials = evolution.trials(prior, direction)
+    # Only a structural recipe can be judged by its objective: a standard step that lost
+    # accuracy says the step was too long, not that the default direction is wrong.
+    failed_recipes = sorted({item["recipe"] for item in measured_trials
+                             if item["recipe"] != "standard"
+                             and number(item["gain"]) is not None and item["gain"] <= 0})
+    failed_slices = []
+    # A keep round trains nothing, so its record carries no stability receipt. Walk back to
+    # the most recent candidate instead of only reading the immediate predecessor, matching
+    # how latest_receipt() resolves tool evidence.
+    for item in reversed(prior):
+        stability = (item.get("local_train_receipt") or {}).get("stability") or []
+        if stability:
+            failed_slices = [row.get("slice") for row in stability if row.get("passed") is False]
+            break
+    # The step scale must not follow the parent's own rate, because every candidate writes
+    # its rate back into the checkpoint meta: anchoring on it makes the probe collapse to
+    # the floor round by round. Anchor on the first observed parent instead.
+    base_rate = next((item.get("parent_learning_rate") for item in prior
+                      if number(item.get("parent_learning_rate")) is not None), None)
+    candidates = evolution.propose({
+        "task": task, "direction": direction, "parent_rate": base_rate or model.meta["learning_rate"],
+        "parent_batch": model.meta["batch_size"], "remaining": remaining,
+        "allowed_recipes": recipes, "prior": prior, "stalled": stalled,
+        "cause": (diagnosis or {}).get("cause"), "failed_slices": failed_slices,
+        "failed_recipes": failed_recipes})
+    prompt["candidates"] = evolution.brief(candidates)
+    if candidates:
+        instructions += (" Answer with a candidate id when one of them is justified; keeping"
+                         " without a measured reason spends the round for nothing.")
     # Tool specifications cost prompt tokens on every sampling round, so they are offered only
     # where fresh evidence can change the decision: the blind first round, a plateau, or a failed
     # trial. Routine rounds already carry the measured summary and stay tool-free.
@@ -246,7 +288,12 @@ def train(rnd):
     # to the most recent candidate instead of only looking at the immediate predecessor.
     receipt_dir = latest_receipt(directory, rnd.round_index)
     evidence_available = receipt_dir is not None
-    tools_wanted = evidence_available and (stalled >= 2 or last_outcome in ("candidate_failed", "training_failed"))
+    # The candidate list already carries the conclusion of that reading, so a tool call is
+    # only worth its tokens when the operator has no plan left. Otherwise the message and
+    # the specifications would both be paid for twice.
+    tools_wanted = (evidence_available
+                    and (stalled >= 2 or last_outcome in ("candidate_failed", "training_failed"))
+                    and evolution.top_trainable(candidates) is None)
     if tools_wanted:
         # A plateau or a failure means the summary has stopped teaching anything. Require one
         # look at the training curve before the decision, so keep is justified by evidence.
@@ -255,9 +302,12 @@ def train(rnd):
         instructions += (" First call read_log_tail once on history.jsonl (10 lines max) to inspect "
                          "the last training curve, then give the JSON decision.")
     if stalled >= 2:
-        # A plateau means more epochs at the same scale buy nothing; say so instead of hoping.
-        instructions += (f" The last {stalled} rounds produced no improvement and the parent is likely"
-                         " converged: prefer keep, or propose a materially different, smaller update.")
+        # A plateau means another step at the same scale buys nothing. Keeping is not a
+        # direction change: it leaves the score exactly where it is, so ask for a real one.
+        instructions += (f" The last {stalled} rounds produced no improvement: the parent is likely"
+                         " converged and another step at the same scale buys nothing. Change the"
+                         " objective or the step size; keep only if the evidence says every"
+                         " candidate would lose accuracy.")
     if research:
         prompt.update(allowed_recipes=recipes, batch_shift=shift)
         instructions += " Train may include an allowed recipe."
@@ -326,26 +376,56 @@ def train(rnd):
     # Only the host's same-round score is official decision evidence.
     parent_score = official_score(rnd.frame.get("current_validation"), metric)
     key = proposed_rate = None
+    chosen = None
     trial = directory / "trial"
     reason = "The model returned a suggestion outside the accepted schema."
     normalization = None
-    try:
-        proposal = Experiment.model_validate_json(reply_text or "")
-    except ValidationError:
-        proposal, normalization = normalize_proposal(reply_text or "", recipes, task)
+    choice = evolution.resolve_choice(reply_text or "", candidates)
+    if choice is not None:
+        proposal, chosen = choice
+        normalization = {"source": "candidate", "clamped": {}, "raw_action": None}
+    else:
+        try:
+            proposal = Experiment.model_validate_json(reply_text or "")
+        except ValidationError:
+            proposal, normalization = normalize_proposal(reply_text or "", recipes, task)
     if proposal is None:
-        proposal, source = rule_plan(task, prior, remaining)
-        if proposal is not None:
-            normalization = {"source": source, "clamped": {}, "raw_action": None}
+        # A reply outside the schema is not a reason to fall back to the rule table: the
+        # evidence-backed candidate is already the better plan, and spending a second
+        # sample to re-ask would cost tokens without changing what the evidence says.
+        fallback = evolution.top_trainable(candidates)
+        if fallback is not None:
+            proposal, chosen = evolution.to_experiment(fallback), fallback
+            normalization = {"source": "candidate_fallback", "clamped": {}, "raw_action": None}
         else:
-            reason = "The model returned an unusable suggestion and no rule plan was available."
+            proposal, source = rule_plan(task, prior, remaining)
+            if proposal is not None:
+                normalization = {"source": source, "clamped": {}, "raw_action": None}
+            else:
+                reason = "The model returned an unusable suggestion and no rule plan was available."
     elif proposal.action == "keep":
-        replacement, source = rule_plan(task, prior, remaining)
-        if replacement is not None:
-            normalization = {"source": source, "clamped": {}, "raw_action": "keep"}
-            proposal = replacement
+        # A keep on a plateau spends the only budget that could still move the score, so the
+        # evidence-backed candidate wins unless the round is genuinely out of room.
+        forced = (evolution.top_trainable(candidates)
+                  if remaining > 0 and (stalled >= 2 or last_outcome in ("candidate_failed", "training_failed"))
+                  else None)
+        if forced is not None:
+            proposal, chosen = evolution.to_experiment(forced), forced
+            normalization = {"source": "candidate_forced", "clamped": {}, "raw_action": "keep"}
+        else:
+            replacement, source = rule_plan(task, prior, remaining)
+            if replacement is not None:
+                normalization = {"source": source, "clamped": {}, "raw_action": "keep"}
+                proposal = replacement
     if normalization is not None and normalization.get("source") == "model":
         normalization = None
+    if proposal is not None and proposal.action == "train" and proposal.recipe not in recipes:
+        # A recipe the operator did not offer cannot be trained. Take the best offered plan
+        # instead of burning the round on an invalid proposal.
+        fallback = evolution.top_trainable(candidates)
+        if fallback is not None:
+            proposal, chosen = evolution.to_experiment(fallback), fallback
+            normalization = {"source": "candidate_fallback", "clamped": {}, "raw_action": "invalid_recipe"}
     if proposal is not None:
         if task == "C" and os.environ.get("ZHIXUN_C_HALF_RATE") == "1":
             proposed_rate = proposal.rate
@@ -435,6 +515,7 @@ def train(rnd):
               "parent_sha256": parent_sha, "candidate_sha256": report["checkpoint_sha256"] if report else None,
               "experiment_key": key, "train_sha256": train_sha, "validation_sha256": validation_sha,
               "metric": metric, "parent_public_score": parent_score, "candidate_public_score": candidate_score,
+              "parent_learning_rate": model.meta["learning_rate"],
               "gain": ((candidate_score - parent_score) * (1 if direction == "higher" else -1)
                        if parent_score is not None and candidate_score is not None else None),
               "local_train_receipt": report, "epochs_attempted": spend, "model": rnd.model_name,
@@ -442,6 +523,12 @@ def train(rnd):
               "prompt_bytes": sum(len(item["content"].encode("utf-8")) for item in messages),
               "output_token_limit": token_limit, "reasoning_disabled": True, "stalled_rounds": stalled,
               "tool_trace": tool_trace,
+              "evolution": {"candidates": [{"id": item["id"], "mutation": item["mutation"],
+                                            "params": item["params"]} for item in candidates],
+                            "chosen": chosen["mutation"] if chosen else None,
+                            "forced": bool(normalization and normalization.get("source") in
+                                           ("candidate_forced", "candidate_fallback")),
+                            "failed_slices": failed_slices, "failed_recipes": failed_recipes},
               "feedback_rounds": [row["round"] for row in prompt["results"]],
               "summary_seconds": round(summary_seconds, 4), "model_seconds": round(model_seconds, 4),
               "elapsed_seconds": round(time.monotonic() - started, 4)}

@@ -14,10 +14,11 @@ RECIPES = {"A": ("standard", "class_balance", "l2"), "B": ("standard", "huber", 
            "C": ("standard", "huber", "l2")}
 OUTPUT_TOKEN_LIMIT = 512
 PROMPT = (
-    'Choose one CPU experiment or keep. Use prior results to avoid repeats and aim for at least '
-    'three measured trials when justified. JSON only. Keep: {"action":"keep","reason":"..."}; '
-    'train: action, reason, rate (0.00005–0.005), batch (32/64/128/256), epochs (1/2). '
-    'Use a short reason (200 chars max).'
+    'Decide one CPU experiment. Candidates are derived from measured evidence: answer '
+    '{"action":"train","candidate":k,"reason":"..."} to pick one, or send a full train object '
+    'to override. JSON only. Keep: {"action":"keep","reason":"..."}, only when every candidate '
+    'would lose accuracy. train fields: reason, rate (0.00005–0.005), batch (32/64/128/256), '
+    'epochs (1/2). Reason 200 chars max.'
 )
 
 

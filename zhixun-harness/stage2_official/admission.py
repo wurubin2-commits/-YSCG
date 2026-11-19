@@ -34,8 +34,14 @@ def signed_gain(direction, parent, candidate):
     return candidate - parent if direction == "higher" else parent - candidate
 
 
-def score_floor(prior, direction):
-    """已采用轮次的最佳公开主指标，作为只升不降的能力下限。"""
+def score_floor(prior, direction, parent_score=None):
+    """Best adopted public score, capped by what the current parent actually measures.
+
+    The ratchet only protects performance if the floor is reachable. A floor better than the
+    parent can only come from a measurement drift or a different validation projection; keeping
+    it would reject every genuinely better candidate for the rest of the run, so the parent's
+    own measured score becomes the effective floor.
+    """
     values = [
         record.get("candidate_public_score")
         for record in prior
@@ -43,7 +49,10 @@ def score_floor(prior, direction):
     ]
     if not values:
         return None
-    return max(values) if direction == "higher" else min(values)
+    floor = max(values) if direction == "higher" else min(values)
+    if parent_score is not None:
+        floor = min(floor, parent_score) if direction == "higher" else max(floor, parent_score)
+    return floor
 
 
 def slice_floors(prior):
@@ -104,7 +113,7 @@ def evaluate(prior, stability, direction, parent_score, candidate_score, *, mode
     if gain <= settings.min_gain:
         return False, "gain", f"gain {gain:.6g} does not exceed {settings.min_gain:g}"
 
-    floor = score_floor(prior, direction)
+    floor = score_floor(prior, direction, parent_score)
     if floor is not None:
         if direction == "higher" and candidate_score < floor - settings.eps:
             return False, "anchor", f"public score {candidate_score:.6g} fell below floor {floor:.6g}"

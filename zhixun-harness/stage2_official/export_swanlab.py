@@ -5,7 +5,7 @@ from pathlib import Path
 
 from stage1_local.common import ROOT, write_json
 from stage2_local.tracking import record_history, record_history_online
-from stage2_official.rehearse import load
+from stage2_official.rehearse import CONTRACTS, load
 
 
 def cost_summary(rows, metric):
@@ -53,7 +53,10 @@ def main():
                             batch_shift=item.get("batch_shift"), input_drift=item.get("input_drift"))
             evidence.update({key: item[key] for key in ("prompt_bytes", "output_token_limit", "feedback_rounds",
                                                         "summary_seconds", "model_seconds") if key in item})
-            gain = ((candidate - parent) * (1 if task == "A" else -1)
+            # The metric direction lives in the contract table; a hardcoded task test would
+            # silently export an inverted gain for any task added later.
+            direction = CONTRACTS[task][2]
+            gain = ((candidate - parent) * (1 if direction == "higher" else -1)
                     if candidate is not None else None)
             seconds = item.get("elapsed_seconds")
             rows.append({"round": item["round"], "status": "accepted" if accepted else item["decision"],

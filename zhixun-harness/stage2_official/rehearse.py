@@ -238,7 +238,15 @@ def run_round(task, idx, directory, train, validation, parent, history, prior_st
                         proposal.update(recipe="b_residual_v1", residual_mean_weight=0.5)
                     if scenario == "c_group_mse":
                         proposal["recipe"] = "c_group_mse_v1"
-                    content = "malformed mock result" if scenario == "invalid_plan" else json.dumps(proposal)
+                    if scenario == "evolution":
+                        # The scripted host always takes the top evidence-backed candidate, so
+                        # this measures the mutation operator with no model judgement in it.
+                        content = json.dumps({"action": "train", "candidate": 1,
+                                              "reason": "Take the first evidence-backed candidate"})
+                    elif scenario == "invalid_plan":
+                        content = "malformed mock result"
+                    else:
+                        content = json.dumps(proposal)
                     message = {"role": "assistant", "content": content}
                 reply.update(type="model_response", call_id=model_id, response={
                     "choices": [{"message": message}]})
@@ -327,7 +335,7 @@ def run_task(task, args, destination):
         if child.stdout.readline():
             raise AssertionError("Predict emitted too many responses")
     records = load(prior / "rounds.json")
-    if args.scenario in ("normal", "recipes", "fixed", "l2sp", "c_half_rate") and args.rounds >= 3 and sum(
+    if args.scenario in ("normal", "recipes", "fixed", "l2sp", "c_half_rate", "evolution") and args.rounds >= 3 and sum(
         r["candidate_artifact"] is not None for r in records
     ) < 3:
         raise AssertionError("Expected at least three measured trials")
@@ -388,6 +396,7 @@ def run_task(task, args, destination):
             "epochs_attempted": sum(item["epochs_attempted"] for item in records),
             "round_seconds": round(sum(item["elapsed_seconds"] for item in records), 2),
             "statuses": dict(Counter(item["decision"] for item in records)), "predictions": predictions,
+            "mutations": dict(Counter(item["evolution"]["chosen"] for item in records if item.get("evolution"))),
             "metric": metric, "original_public": reference["validation_after"][metric],
             "selected_public": local_scores(task, validation, parent)[metric],
             "wall_seconds": round(time.monotonic() - started, 2), "selected_sha256": sha256(parent)}
@@ -404,7 +413,7 @@ def main():
     parser.add_argument("--scenario", choices=("normal", "invalid_plan", "reject_candidate", "invalid_training",
                                                "time_budget", "missing_call", "wrong_parent", "duplicate",
                                                "recipes", "fixed", "repeat_pairs", "l2sp", "c_half_rate",
-                                               "sensor_mask", "b_residual", "c_group_mse"), default="normal")
+                                               "sensor_mask", "b_residual", "c_group_mse", "evolution"), default="normal")
     args = parser.parse_args()
     if args.scenario == "l2sp" and args.task != "B":
         parser.error("The L2-SP trial requires --task B")
