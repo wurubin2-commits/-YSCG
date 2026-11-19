@@ -65,14 +65,19 @@ def diagnose(train_x, validation_x, top_k=5):
     validation_x = _subsample(validation_x)
     if len(train_x) < MIN_ROWS or len(validation_x) < MIN_ROWS:
         return None
-    values = [psi_column(train_x[:, index], validation_x[:, index]) for index in range(train_x.shape[1])]
-    if any(value is None for value in values):
+    # A constant or degenerate column cannot be compared, but it must not void the
+    # whole report: one flat setting column would otherwise disable drift monitoring.
+    usable = [(index, psi_column(train_x[:, index], validation_x[:, index]))
+              for index in range(train_x.shape[1])]
+    usable = [(index, value) for index, value in usable if value is not None]
+    if not usable:
         return None
-    psi = np.asarray(values, dtype=np.float64)
+    psi = np.asarray([value for _, value in usable], dtype=np.float64)
     order = np.argsort(psi)[::-1][:top_k]
     return {"psi_mean": round(float(psi.mean()), 6), "psi_max": round(float(psi.max()), 6),
             "n_features_drifted": int((psi > DRIFT_CUTOFF).sum()),
-            "top_features": [{"index": int(index), "psi": round(float(psi[index]), 6)} for index in order]}
+            "n_features_unavailable": train_x.shape[1] - len(usable),
+            "top_features": [{"index": usable[i][0], "psi": round(float(usable[i][1]), 6)} for i in order]}
 
 
 def collect_features(rows, flatten, limit=SAMPLE_LIMIT):

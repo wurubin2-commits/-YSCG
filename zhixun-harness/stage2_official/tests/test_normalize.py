@@ -68,9 +68,9 @@ class NormalizeTest(unittest.TestCase):
         self.assertEqual(report["clamped"]["l2sp_strength"]["to"], None)
 
     def test_long_reason_is_trimmed_and_empty_reason_is_filled(self):
-        plan, report = self.plan(self.train(reason="x" * 200))
-        self.assertEqual(len(plan.reason), 100)
-        self.assertEqual(report["clamped"]["reason"], {"from": {"length": 200}, "to": {"length": 100}})
+        plan, report = self.plan(self.train(reason="x" * 400))
+        self.assertEqual(len(plan.reason), 200)
+        self.assertEqual(report["clamped"]["reason"], {"from": {"length": 400}, "to": {"length": 200}})
         plan, report = self.plan(self.train(reason="   "))
         self.assertTrue(plan.reason)
         self.assertEqual(report["source"], "normalized")

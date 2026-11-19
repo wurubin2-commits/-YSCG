@@ -12,17 +12,17 @@ from stage2_official.continuation import B_RESIDUAL_RECIPE, L2SP_MAX_STRENGTH, L
 
 RECIPES = {"A": ("standard", "class_balance", "l2"), "B": ("standard", "huber", "l2"),
            "C": ("standard", "huber", "l2")}
-OUTPUT_TOKEN_LIMIT = 192
+OUTPUT_TOKEN_LIMIT = 512
 PROMPT = (
     'Choose one CPU experiment or keep. Use prior results to avoid repeats and aim for at least '
     'three measured trials when justified. JSON only. Keep: {"action":"keep","reason":"..."}; '
     'train: action, reason, rate (0.00005–0.005), batch (32/64/128/256), epochs (1/2). '
-    'Use a short reason (100 chars max).'
+    'Use a short reason (200 chars max).'
 )
 
 
 class Experiment(Proposal):
-    reason: str = Field(min_length=1, max_length=100)
+    reason: str = Field(min_length=1, max_length=200)
     recipe: Literal["standard", "class_balance", "huber", "l2", "l2sp", "sensor_mask_v1", "b_residual_v1",
                     "c_group_mse_v1"] = "standard"
     l2sp_strength: float | None = Field(default=None, gt=0.0, le=L2SP_MAX_STRENGTH, allow_inf_nan=False)

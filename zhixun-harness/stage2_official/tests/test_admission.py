@@ -18,8 +18,14 @@ def record(decision, score, stability=None):
             "local_train_receipt": {"stability": stability or []}}
 
 
-def test_disabled_passes(monkeypatch):
+def test_enabled_by_default(monkeypatch):
+    """门槛要求封测不低于静态基线，因此该护栏必须默认生效。"""
     monkeypatch.delenv("ZHIXUN_ADMISSION", raising=False)
+    assert admission.config().enabled is True
+
+
+def test_disabled_passes(monkeypatch):
+    monkeypatch.setenv("ZHIXUN_ADMISSION", "0")
     ok, gate, reason = admission.evaluate([], [], "higher", 0.7, 0.6)
     assert (ok, gate) == (True, "disabled")
     assert "off" in reason

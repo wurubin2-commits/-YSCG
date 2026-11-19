@@ -2,10 +2,27 @@
 
 import argparse
 from pathlib import Path
+import re
 import shutil
 
 from stage1_local.common import ROOT, TASKS, sha256, write_json
 from stage2_official.rehearse import load
+
+IMPORTED = re.compile(r"^\s*from stage2_official(?:\.(\w+)| import ([^\n]+))", re.MULTILINE)
+
+
+def required_modules(origin):
+    """Modules the entry imports, so a renamed file cannot silently leave the image."""
+    names = set()
+    for match in IMPORTED.finditer(origin.read_text(encoding="utf-8")):
+        if match.group(1):
+            names.add(match.group(1))
+            continue
+        for item in match.group(2).split(","):
+            name = item.strip().partition(" as ")[0].strip()
+            if name and name != "*":
+                names.add(name)
+    return names
 
 
 def build(output, wheelhouse=None):
@@ -28,6 +45,11 @@ def build(output, wheelhouse=None):
     copy(source / "continuation.py", "app/stage2_official/continuation.py")
     copy(source / "operating_conditions.py", "app/stage2_official/operating_conditions.py")
     copy(source / "drift.py", "app/stage2_official/drift.py")
+    copy(source / "admission.py", "app/stage2_official/admission.py")
+    copy(source / "normalize.py", "app/stage2_official/normalize.py")
+    copy(source / "diagnostics.py", "app/stage2_official/diagnostics.py")
+    copy(source / "attribution.py", "app/stage2_official/attribution.py")
+    copy(source / "tool_layer.py", "app/stage2_official/tool_layer.py")
     copy(ROOT / "stage1_local/common.py", "app/stage1_local/common.py")
     copy(ROOT / "stage2_local/planner.py", "app/stage2_local/planner.py")
     for name in ("pyproject.toml", "README.md"):
@@ -63,6 +85,11 @@ def build(output, wheelhouse=None):
             raise ValueError("Provide a directory of preverified Linux wheels")
         for wheel in wheels:
             copy(wheel, Path("wheelhouse") / wheel.name)
+    # A missing module only fails inside the container, where no trace is visible.
+    for origin in sorted((output / "app").rglob("*.py")):
+        for module in sorted(required_modules(origin)):
+            if f"app/stage2_official/{module}.py" not in files:
+                raise ValueError(f"Image context omits {module}, imported by {origin.name}")
     write_json(output / "context-manifest.json", files)
     print(f"{output}: {len(files)} inspected files", flush=True)
 

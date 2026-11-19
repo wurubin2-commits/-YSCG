@@ -14,6 +14,7 @@ import threading
 import time
 
 from stage1_local.common import ROOT, package, sha256, write_json
+from stage2_official.tool_layer import MAX_TOOL_ROUNDS
 from stage2_official.trainer import baseline
 
 DIRECTORY = Path(__file__).parent
@@ -21,6 +22,8 @@ CONTRACTS = {"A": ("classification", "macro_f1", "higher"),
              "B": ("regression", "rmse", "lower"), "C": ("regression", "rmse", "lower")}
 PREDICTION = ["python3", "/app/harness.py", "predict"]
 L2SP_TRIAL_STRENGTH = 1.0
+# Set by --live: a real model answers the decision requests instead of the scripted proposals.
+ADVISOR = None
 
 
 def load(path):
@@ -194,6 +197,8 @@ def run_round(task, idx, directory, train, validation, parent, history, prior_st
             elif protocol == "model_request":
                 if frame["max_tokens"] > 512:
                     raise AssertionError("Unbounded mock request")
+                if frame.get("enable_thinking") is not False:
+                    raise AssertionError("The advisor must disable reasoning to answer inside the budget")
                 requests.append({"prompt_bytes": sum(len(m["content"].encode("utf-8")) for m in frame["messages"]),
                                  "output_token_limit": frame["max_tokens"]})
                 if scenario == "missing_call":
@@ -201,31 +206,42 @@ def run_round(task, idx, directory, train, validation, parent, history, prior_st
                 else:
                     model_id = f"local-{task}-{idx}-{len(model_ids)+1}"
                     model_ids.append(model_id)
-                proposal = {"action": "train", "reason": f"Test bounded continuation on public batch {idx}",
-                            "rate": (0.001, 0.0005, 0.00075)[(idx - 1) % 3],
-                            "batch": 256 if task == "C" else 128, "epochs": 1}
-                if scenario in ("duplicate", "fixed", "repeat_pairs"):
-                    proposal["rate"] = 0.001
-                if scenario == "duplicate":
-                    if idx > 1:
-                        context = json.loads(frame["messages"][-1]["content"])
-                        previous = context["results"][0]
-                        if previous["scores"][0] != previous["scores"][1] or previous["params"]["rate"] != 0.001:
-                            raise AssertionError("The advisor did not receive the measured experiment")
-                if scenario == "recipes":
-                    variants = ("class_balance", "l2", "standard") if task == "A" else ("huber", "l2", "standard")
-                    proposal["recipe"] = variants[(idx - 1) % len(variants)]
-                if scenario == "l2sp":
-                    proposal.update(recipe="l2sp", l2sp_strength=L2SP_TRIAL_STRENGTH)
-                if scenario == "sensor_mask":
-                    proposal["recipe"] = "sensor_mask_v1"
-                if scenario == "b_residual":
-                    proposal.update(recipe="b_residual_v1", residual_mean_weight=0.5)
-                if scenario == "c_group_mse":
-                    proposal["recipe"] = "c_group_mse_v1"
-                content = "malformed mock result" if scenario == "invalid_plan" else json.dumps(proposal)
+                if ADVISOR is not None:
+                    # Real model: the harness decides on what it actually answered. Tool
+                    # specifications ride on the frame exactly as the gateway would send them.
+                    answer = ADVISOR.ask(frame["messages"], frame["max_tokens"],
+                                         tools=frame.get("tools"))
+                    content = answer["text"]
+                    message = {"role": "assistant", "content": content}
+                    if answer["tool_calls"]:
+                        message["tool_calls"] = answer["tool_calls"]
+                else:
+                    proposal = {"action": "train", "reason": f"Test bounded continuation on public batch {idx}",
+                                "rate": (0.001, 0.0005, 0.00075)[(idx - 1) % 3],
+                                "batch": 256 if task == "C" else 128, "epochs": 1}
+                    if scenario in ("duplicate", "fixed", "repeat_pairs"):
+                        proposal["rate"] = 0.001
+                    if scenario == "duplicate":
+                        if idx > 1:
+                            context = json.loads(frame["messages"][-1]["content"])
+                            previous = context["results"][0]
+                            if previous["scores"][0] != previous["scores"][1] or previous["params"]["rate"] != 0.001:
+                                raise AssertionError("The advisor did not receive the measured experiment")
+                    if scenario == "recipes":
+                        variants = ("class_balance", "l2", "standard") if task == "A" else ("huber", "l2", "standard")
+                        proposal["recipe"] = variants[(idx - 1) % len(variants)]
+                    if scenario == "l2sp":
+                        proposal.update(recipe="l2sp", l2sp_strength=L2SP_TRIAL_STRENGTH)
+                    if scenario == "sensor_mask":
+                        proposal["recipe"] = "sensor_mask_v1"
+                    if scenario == "b_residual":
+                        proposal.update(recipe="b_residual_v1", residual_mean_weight=0.5)
+                    if scenario == "c_group_mse":
+                        proposal["recipe"] = "c_group_mse_v1"
+                    content = "malformed mock result" if scenario == "invalid_plan" else json.dumps(proposal)
+                    message = {"role": "assistant", "content": content}
                 reply.update(type="model_response", call_id=model_id, response={
-                    "choices": [{"message": {"role": "assistant", "content": content}}]})
+                    "choices": [{"message": message}]})
             elif protocol == "candidate_request":
                 if frame["parent_checkpoint_sha256"] != checkpoint or frame["parent_artifact_id"] != artifact["artifact_id"]:
                     raise AssertionError("Wrong candidate parent")
@@ -356,9 +372,13 @@ def run_task(task, args, destination):
     traces = [load(directory / "trace.json") for directory in sorted(destination.glob("round-*"))]
     requests = [item for directory in sorted(destination.glob("round-*"))
                 for item in load(directory / "requests.json")]
-    if any(trace.count("model_request") != 1 or trace.count("candidate_request") > 1 for trace in traces):
-        raise AssertionError("Expected one model call and at most one candidate per round")
+    # A decision may now spend several model calls on its tool loop (plus one forced answer),
+    # so the contract is a bounded call count, not exactly one request per round.
+    if any(not 1 <= trace.count("model_request") <= MAX_TOOL_ROUNDS + 1
+           or trace.count("candidate_request") > 1 for trace in traces):
+        raise AssertionError("Expected a bounded tool loop and at most one candidate per round")
     return {"rounds": len(records), "model_calls": sum(len(item["model_call_ids"]) for item in records),
+            "tool_calls": sum(len(item.get("tool_trace") or []) for item in records),
             "prompt_bytes": sum(item["prompt_bytes"] for item in requests),
             "max_output_tokens_per_call": max(item["output_token_limit"] for item in requests),
             "training_attempts": sum(item["epochs_attempted"] > 0 for item in records),
@@ -379,6 +399,8 @@ def main():
     parser.add_argument("--task", choices=("all", *CONTRACTS), default="all")
     parser.add_argument("--rounds", choices=range(1, 11), default=10, type=int)
     parser.add_argument("--image", help="Official-entry image to use instead of the host Python")
+    parser.add_argument("--live", metavar="BASE_MODEL",
+                        help="Ask a real PyTRiO model instead of the scripted proposals, e.g. Qwen/Qwen3.8-27B")
     parser.add_argument("--scenario", choices=("normal", "invalid_plan", "reject_candidate", "invalid_training",
                                                "time_budget", "missing_call", "wrong_parent", "duplicate",
                                                "recipes", "fixed", "repeat_pairs", "l2sp", "c_half_rate",
@@ -404,9 +426,16 @@ def main():
             "contest.harness.workspace.v2", "host_gateway_rpc", "1.0.2", {"classification", "regression"}
         ):
             raise AssertionError("Unexpected official describe contract")
+    global ADVISOR
+    if args.live:
+        from stage2_official.live_advisor import LiveAdvisor
+        ADVISOR = LiveAdvisor(args.live)
     tasks = CONTRACTS if args.task == "all" else (args.task,)
     summary = {task: run_task(task, args, output / task) for task in tasks}
-    write_json(output / "summary.json", {"mode": "mock_host", "scenario": args.scenario, "describe": spec, "tasks": summary})
+    write_json(output / "summary.json", {
+        "mode": "mock_host" if ADVISOR is None else f"live:{args.live}",
+        "scenario": args.scenario, "describe": spec, "tasks": summary,
+        "advisor": ADVISOR.report() if ADVISOR is not None else None})
     print(output / "summary.json", flush=True)
 
 

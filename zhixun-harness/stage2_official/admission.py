@@ -1,8 +1,8 @@
 """可选准入护栏：增益门、跨轮锚点棘轮与回滚预演。
 
 吸收队友 ZMC 分支 guardrails 的判定顺序（增益 → 锚点 → 可回滚），
-适配官方 SDK 的轮次协议。默认关闭；设置 ZHIXUN_ADMISSION=1 才生效，
-关闭时决策链与 V3 基线完全一致。
+适配官方 SDK 的轮次协议。默认开启：门槛要求封测性能不低于静态基线，
+该护栏是这条线的专用防线。设置 ZHIXUN_ADMISSION=0 可回到 V3 基线行为。
 """
 
 import math
@@ -21,7 +21,7 @@ class Config:
 
 def config():
     return Config(
-        enabled=os.environ.get("ZHIXUN_ADMISSION") == "1",
+        enabled=os.environ.get("ZHIXUN_ADMISSION", "1") != "0",
         min_gain=float(os.environ.get("ZHIXUN_ADMISSION_MIN_GAIN") or 0.0),
         eps=float(os.environ.get("ZHIXUN_ADMISSION_EPS") or 0.0),
         rollback=os.environ.get("ZHIXUN_ADMISSION_ROLLBACK", "1") == "1",

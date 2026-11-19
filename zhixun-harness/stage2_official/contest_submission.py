@@ -15,7 +15,7 @@ from contest_harness.errors import HarnessError
 from pydantic import ValidationError
 
 from stage1_local.common import ROOT, sha256
-from stage2_official import admission
+from stage2_official import admission, attribution
 from stage2_official.continuation import B_RESIDUAL_RECIPE, SENSOR_MASK_RECIPE
 from stage2_official.normalize import normalize_proposal, rule_plan
 from stage2_official.operating_conditions import C_GROUP_RECIPE
@@ -23,6 +23,7 @@ from stage2_official.policy import (
     Experiment, OUTPUT_TOKEN_LIMIT, PROMPT, RECIPES, already_trained, c_half_rate, compact_score,
     effective_parameters, experiment_key, history_feedback,
 )
+from stage2_official.tool_layer import TOOL_SPECS, ToolBox, calls_of, latest_receipt, run_tool_rounds
 from stage2_official.trainer import baseline
 
 TASKS = ("classification", "regression")
@@ -81,6 +82,21 @@ def official_score(summary, metric):
     return None
 
 
+def condition_counts(path, model, task):
+    """Operating-condition mix of C training rows; None when the columns are absent."""
+    try:
+        from stage2_official.operating_conditions import OTHER, operating_groups
+        data = baseline(task, "data").read_dataset(path, model.meta["task"], model.meta["classes"],
+                                                   model.meta["paths"])
+        groups = operating_groups(data["x"], model.meta["paths"])
+        counts = [0] * (OTHER + 1)
+        for value in groups.tolist():
+            counts[value] += 1
+        return {str(index): count for index, count in enumerate(counts) if count > 0}
+    except (ValueError, OSError, KeyError):
+        return None
+
+
 def assess(rnd, report, submitted, metric, direction):
     parent = official_score(rnd.frame.get("current_validation"), metric)
     candidate = official_score(submitted.get("summary"), metric)
@@ -100,13 +116,24 @@ def assess(rnd, report, submitted, metric, direction):
     return better, parent, candidate, source
 
 
+def scratch_workspace():
+    """Pick a writable scratch root; the graded root filesystem is read-only."""
+    for candidate in (os.environ.get("CONTEST_WORK"), "/workspace", "/tmp"):
+        if not candidate:
+            continue
+        path = Path(candidate)
+        if path.is_dir() and os.access(path, os.W_OK):
+            return path
+    raise ValueError("No writable scratch directory is available")
+
+
 def train(rnd):
     started = time.monotonic()
     task = rnd.dataset_key
     kind, metric, direction = CONTRACTS[task]
     if (rnd.task.get("task"), rnd.task.get("metric"), rnd.task.get("metric_direction")) != (kind, metric, direction):
         raise ValueError("Unexpected task contract")
-    workspace = Path(os.environ.get("CONTEST_WORK", "/workspace"))
+    workspace = scratch_workspace()
     directory = Path(mkdtemp(prefix=f"{task}-{rnd.round_index:02d}-", dir=workspace))
     path = parent_checkpoint(rnd)
     model = baseline(task, "model").Model.load(path)
@@ -172,6 +199,20 @@ def train(rnd):
             input_drift = diagnose(train_features, validation_matrix(task, rnd.data.validation_path, model))
         except (ValueError, OSError, KeyError):
             input_drift = None
+    diagnosis = None
+    if os.environ.get("ZHIXUN_ATTRIBUTION", "1") != "0":
+        counts = condition_counts(rnd.data.train_path, model, task) if task == "C" else None
+        diagnosis = attribution.attribute(task, batch, classes=model.meta.get("classes") or (),
+                                          drift=input_drift, parent_target_mean=model.meta.get("target_mean"),
+                                          condition_counts=counts)
+        # Only recipes the attributed cause justifies are added; order is preserved.
+        recipes = attribution.merge_recipes(recipes, diagnosis["recipes"])
+    # Consecutive rounds since the last adopted candidate: the search has stopped paying off.
+    stalled = 0
+    for item in reversed(prior):
+        if item.get("decision") == "adopted":
+            break
+        stalled += 1
     parent_sha = sha256(path)
     train_sha, validation_sha = sha256(rnd.data.train_path), sha256(rnd.data.validation_path)
     parent_score = official_score(rnd.frame.get("current_validation"), metric)
@@ -187,12 +228,36 @@ def train(rnd):
               "parent_score": compact_score(parent_score),
               "parent_params": {"rate": model.meta["learning_rate"], "batch": model.meta["batch_size"]},
               "measured_trials": sum(item.get("candidate_public_score") is not None for item in prior),
+              "stalled_rounds": stalled,
               "batch": {**batch}, "remaining_epochs": remaining,
               "results": history_feedback(prior, history, parent_sha, train_sha, rnd.round_index)}
     if unit:
         prompt["unit"] = unit
         prompt["batch"]["target_mean"] = compact_score(batch["target_mean"])
     instructions = PROMPT + " Scores are [parent,candidate]. Never repeat same_batch parameters."
+    # Tool specifications cost prompt tokens on every sampling round, so they are offered only
+    # where fresh evidence can change the decision: the blind first round, a plateau, or a failed
+    # trial. Routine rounds already carry the measured summary and stay tool-free.
+    last_outcome = prior[-1].get("decision") if prior else None
+    # The current round has not trained yet: the informative receipt and loss curve belong to
+    # the previous trial. Offer tools only when that evidence exists and the summary leaves a
+    # real question open, so routine rounds do not pay for tool specifications they never use.
+    # A keep round trains nothing, so the latest receipt can be several rounds back: walk back
+    # to the most recent candidate instead of only looking at the immediate predecessor.
+    receipt_dir = latest_receipt(directory, rnd.round_index)
+    evidence_available = receipt_dir is not None
+    tools_wanted = evidence_available and (stalled >= 2 or last_outcome in ("candidate_failed", "training_failed"))
+    if tools_wanted:
+        # A plateau or a failure means the summary has stopped teaching anything. Require one
+        # look at the training curve before the decision, so keep is justified by evidence.
+        # Only the read tools are offered: the final JSON proposal already carries the
+        # hyper-parameters, so a separate write_config round would cost a whole extra sample.
+        instructions += (" First call read_log_tail once on history.jsonl (10 lines max) to inspect "
+                         "the last training curve, then give the JSON decision.")
+    if stalled >= 2:
+        # A plateau means more epochs at the same scale buy nothing; say so instead of hoping.
+        instructions += (f" The last {stalled} rounds produced no improvement and the parent is likely"
+                         " converged: prefer keep, or propose a materially different, smaller update.")
     if research:
         prompt.update(allowed_recipes=recipes, batch_shift=shift)
         instructions += " Train may include an allowed recipe."
@@ -208,13 +273,49 @@ def train(rnd):
     if c_group_mse_enabled:
         prompt["allowed_recipes"] = recipes
         instructions += " Train may use recipe c_group_mse_v1."
+    if diagnosis is not None and diagnosis["recipes"]:
+        prompt["attribution"] = {"cause": diagnosis["cause"], "channels": diagnosis["channels"],
+                                 "evidence": {key: value for key, value in diagnosis["evidence"].items()
+                                              if key != "condition_counts"}}
+        prompt["allowed_recipes"] = recipes
+        instructions += f" Attribution of this batch suggests {', '.join(diagnosis['recipes'])}."
     messages = [{"role": "system", "content": instructions},
                 {"role": "user", "content": json.dumps(prompt, ensure_ascii=False, separators=(",", ":"),
                                                        allow_nan=False)}]
     summary_seconds = time.monotonic() - summary_started
     token_limit = min(OUTPUT_TOKEN_LIMIT, rnd.max_output_tokens)
     model_started = time.monotonic()
-    reply = rnd.model(messages, max_tokens=token_limit, temperature=0)
+    toolbox = ToolBox(receipt_dir if evidence_available else directory, write_root=directory)
+    holder = {"receipt": None}
+
+    # Reasoning models spend the whole budget on a draft before writing any answer. The SDK whitelists
+    # this option, so the decision stays a direct answer instead of a truncated thought process.
+    # Tools ride on the same call: the model may read metrics or log tails and write one bounded
+    # config patch before it answers. A host that rejects the option falls back to a plain call.
+    read_specs = [spec for spec in TOOL_SPECS if spec["function"]["name"] != "write_config"]
+    def invoke(history):
+        options = dict(max_tokens=token_limit, temperature=0, enable_thinking=False)
+        if tools_wanted:
+            options.update(tools=read_specs, tool_choice="auto")
+        try:
+            receipt = rnd.model(history, **options)
+        except HarnessError:
+            receipt = rnd.model(history, max_tokens=token_limit, temperature=0, enable_thinking=False)
+        holder["receipt"] = receipt
+        return {"text": getattr(receipt, "text", "") or "", "tool_calls": calls_of(receipt)}
+
+    def finish(history):
+        # The model spent the whole tool budget without answering: force one tool-free call
+        # so the round still produces a parseable decision instead of an empty string.
+        try:
+            receipt = rnd.model(history, max_tokens=token_limit, temperature=0, enable_thinking=False)
+        except HarnessError:
+            return {"text": "", "tool_calls": []}
+        holder["receipt"] = receipt
+        return {"text": getattr(receipt, "text", "") or "", "tool_calls": []}
+
+    reply_text, tool_trace = run_tool_rounds(invoke, messages, toolbox, finish=finish)
+    receipt = holder["receipt"]
     model_seconds = time.monotonic() - model_started
 
     selected = rnd.parent.artifact_id
@@ -229,9 +330,9 @@ def train(rnd):
     reason = "The model returned a suggestion outside the accepted schema."
     normalization = None
     try:
-        proposal = Experiment.model_validate_json(reply.text or "")
+        proposal = Experiment.model_validate_json(reply_text or "")
     except ValidationError:
-        proposal, normalization = normalize_proposal(reply.text or "", recipes, task)
+        proposal, normalization = normalize_proposal(reply_text or "", recipes, task)
     if proposal is None:
         proposal, source = rule_plan(task, prior, remaining)
         if proposal is not None:
@@ -323,12 +424,12 @@ def train(rnd):
                         else:
                             status, reason = "measured_keep", f"Parent retained based on {source}."
 
-    usage = reply.response.get("usage") or {}
+    usage = (getattr(receipt, "response", None) or {}).get("usage") or {}
     token_counts = {key: usage[key] for key in ("prompt_tokens", "completion_tokens", "total_tokens")
                     if type(usage.get(key)) is int}
     record = {"task": task, "round": rnd.round_index, "batch": batch, "decision": status,
               "batch_shift": shift, "feature_histogram": current_distribution,
-              "input_drift": input_drift,
+              "input_drift": input_drift, "attribution": diagnosis,
               "reason": reason, "hypothesis": hypothesis, "configuration": config, "seed": seed,
               "parent_artifact": rnd.parent.artifact_id, "candidate_artifact": candidate_id, "selected_artifact": selected,
               "parent_sha256": parent_sha, "candidate_sha256": report["checkpoint_sha256"] if report else None,
@@ -339,7 +440,9 @@ def train(rnd):
               "local_train_receipt": report, "epochs_attempted": spend, "model": rnd.model_name,
               "model_call_ids": list(rnd.call_ids), "history_ids": list(rnd.history_ids), "usage": token_counts,
               "prompt_bytes": sum(len(item["content"].encode("utf-8")) for item in messages),
-              "output_token_limit": token_limit, "feedback_rounds": [row["round"] for row in prompt["results"]],
+              "output_token_limit": token_limit, "reasoning_disabled": True, "stalled_rounds": stalled,
+              "tool_trace": tool_trace,
+              "feedback_rounds": [row["round"] for row in prompt["results"]],
               "summary_seconds": round(summary_seconds, 4), "model_seconds": round(model_seconds, 4),
               "elapsed_seconds": round(time.monotonic() - started, 4)}
     if admission_record is not None:

@@ -47,6 +47,20 @@ class DiagnoseTest(unittest.TestCase):
         self.assertEqual(report["psi_mean"].__class__, float)
         self.assertEqual(len(report["top_features"]), 2)
 
+    def test_degenerate_column_does_not_void_the_report(self):
+        # A nearly constant column yields two quantile edges, which cannot be scored.
+        # It must be skipped, not turn the whole report into None.
+        rng = np.random.default_rng(13)
+        train = rng.normal(size=(300, 3))
+        train[:, 0] = 0.0
+        train[0, 0] = 1.0
+        validation = train.copy()
+        validation[:, 2] += 1.5
+        report = diagnose(train, validation, top_k=2)
+        self.assertIsNotNone(report)
+        self.assertGreaterEqual(report["n_features_unavailable"], 1)
+        self.assertEqual(report["top_features"][0]["index"], 2)
+
 
 class CollectFeaturesTest(unittest.TestCase):
     def test_bounded_sample_and_full_pass_through(self):
